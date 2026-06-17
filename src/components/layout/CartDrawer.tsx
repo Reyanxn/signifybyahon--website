@@ -6,7 +6,7 @@ import { HiX, HiMinus, HiPlus, HiShoppingBag } from 'react-icons/hi';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { formatPrice } from '@/utils/helpers';
-import { SHIPPING } from '@/utils/constants';
+import { SHIPPING, SHIPPING_RATES } from '@/utils/constants';
 
 export default function CartDrawer() {
   const { isCartOpen, toggleCart } = useUIStore();

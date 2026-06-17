@@ -12,8 +12,15 @@ export const COLORS = {
   bgSecondary: '#F9F9F9',
 };
 
+export const SHIPPING_RATES = [
+  { id: 'inside-dhaka', label: 'Inside Dhaka', price: 60 },
+  { id: 'dhaka-sub-area', label: 'Dhaka Sub-area', price: 100 },
+  { id: 'outside-dhaka', label: 'Outside Dhaka', price: 120 },
+] as const;
+
 export const SHIPPING = {
   insideDhaka: 60,
+  dhakaSubArea: 100,
   outsideDhaka: 120,
   freeDeliveryThreshold: 2000,
 };

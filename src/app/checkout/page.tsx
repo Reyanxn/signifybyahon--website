@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice, generateOrderId } from '@/utils/helpers';
-import { SHIPPING, PAYMENT_METHODS } from '@/utils/constants';
+import { SHIPPING, SHIPPING_RATES, PAYMENT_METHODS } from '@/utils/constants';
 import { addOrder } from '@/lib/supabaseServices';
 import toast from 'react-hot-toast';
 
@@ -17,9 +17,11 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', altPhone: '', email: '', address: '', city: '', area: '', notes: '' });
+  const [shippingZone, setShippingZone] = useState('inside-dhaka');
   const update = (f: string, v: string) => setForm((p) => ({ ...p, [f]: v }));
   const subtotal = getSubtotal();
-  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : SHIPPING.insideDhaka;
+  const zoneRate = SHIPPING_RATES.find((r) => r.id === shippingZone);
+  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 60);
   const total = subtotal + shipping;
 
   if (items.length === 0) { router.push('/cart'); return null; }
@@ -41,7 +43,7 @@ export default function CheckoutPage() {
         orderStatus: 'received',
         customerInfo: { name: form.name, phone: form.phone, altPhone: form.altPhone, email: form.email },
         shippingAddress: { address: form.address, city: form.city, area: form.area },
-        notes: form.notes,
+        notes: `Zone: ${zoneRate?.label || 'Inside Dhaka'}${form.notes ? ' | ' + form.notes : ''}`,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -75,6 +77,21 @@ export default function CheckoutPage() {
                   </select>
                   <input placeholder="Area" value={form.area} onChange={(e) => update('area', e.target.value)} className="input-field text-xs" />
                   <textarea placeholder="Order Notes" value={form.notes} onChange={(e) => update('notes', e.target.value)} rows={3} className="input-field text-xs resize-none" />
+                </div>
+              </div>
+
+              <div className="border border-[#DDDDDD] p-6">
+                <h2 className="text-xs uppercase tracking-[0.2em] mb-4">Shipping Zone</h2>
+                <div className="space-y-2">
+                  {SHIPPING_RATES.map((zone) => (
+                    <label key={zone.id} className={`flex items-center justify-between gap-3 p-3 border cursor-pointer ${shippingZone === zone.id ? 'border-[#1C1C1C] bg-[#F9F9F9]' : 'border-[#DDDDDD]'}`}>
+                      <div className="flex items-center gap-3">
+                        <input type="radio" name="shipping" value={zone.id} checked={shippingZone === zone.id} onChange={(e) => setShippingZone(e.target.value)} className="accent-[#1C1C1C]" />
+                        <span className="text-xs uppercase tracking-[0.1em]">{zone.label}</span>
+                      </div>
+                      <span className="text-xs">৳{zone.price}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

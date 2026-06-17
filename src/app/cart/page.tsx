@@ -5,14 +5,16 @@ import Link from 'next/link';
 import { HiX, HiMinus, HiPlus, HiShoppingBag, HiArrowLeft } from 'react-icons/hi';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice } from '@/utils/helpers';
-import { SHIPPING } from '@/utils/constants';
+import { SHIPPING, SHIPPING_RATES } from '@/utils/constants';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getSubtotal } = useCartStore();
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const subtotal = getSubtotal();
-  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : SHIPPING.insideDhaka;
+  const [estimatedZone, setEstimatedZone] = useState('inside-dhaka');
+  const zoneRate = SHIPPING_RATES.find((r) => r.id === estimatedZone);
+  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 60);
   const discount = couponApplied ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal + shipping - discount;
 
@@ -65,6 +67,9 @@ export default function CartPage() {
               <h2 className="text-xs uppercase tracking-[0.2em]">Order Summary</h2>
               <div className="flex justify-between text-xs"><span className="opacity-60">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
               <div className="flex justify-between text-xs"><span className="opacity-60">Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
+              <select value={estimatedZone} onChange={(e) => setEstimatedZone(e.target.value)} className="text-[10px] uppercase border border-[#DDDDDD] p-1.5 w-full">
+                {SHIPPING_RATES.map((z) => <option key={z.id} value={z.id}>{z.label} — ৳{z.price}</option>)}
+              </select>
               {discount > 0 && <div className="flex justify-between text-xs text-[#E40100]"><span>Discount</span><span>-{formatPrice(discount)}</span></div>}
               <div className="border-t pt-4 flex justify-between font-medium"><span>Total</span><span>{formatPrice(total)}</span></div>
 
