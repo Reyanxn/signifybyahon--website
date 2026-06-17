@@ -1,0 +1,215 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getProducts, addProduct, updateProduct, deleteProduct, uploadProductImage } from '@/lib/supabaseServices';
+import { supabase } from '@/lib/supabase';
+import { formatPrice } from '@/utils/helpers';
+import type { Product } from '@/types';
+import toast from 'react-hot-toast';
+
+export default function AdminProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [form, setForm] = useState({
+    name: '', description: '', price: '', salePrice: '',
+    categoryId: '', collectionId: '', sizes: '', colors: '', stock: '',
+    featured: false, bestSeller: false, trending: false, tags: '',
+  });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadProducts();
+    supabase.from('categories').select('id, name, slug').then(({ data }) => {
+      if (data) setCategories(data);
+    });
+  }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    const data = await getProducts();
+    setProducts(data);
+    setLoading(false);
+  };
+
+  const openNew = () => {
+    setEditing(null);
+    setForm({ name: '', description: '', price: '', salePrice: '', categoryId: '', collectionId: '', sizes: '', colors: '', stock: '', featured: false, bestSeller: false, trending: false, tags: '' });
+    setImageFiles([]);
+    setExistingImages([]);
+    setShowForm(true);
+  };
+
+  const openEdit = (p: Product) => {
+    setEditing(p.id);
+    setForm({
+      name: p.name, description: p.description,
+      price: String(p.price), salePrice: p.salePrice ? String(p.salePrice) : '',
+      categoryId: p.categoryId, collectionId: p.collectionId || '',
+      sizes: p.sizes.join(', '), colors: p.colors.join(', '), stock: String(p.stock),
+      featured: p.featured || false, bestSeller: p.bestSeller || false, trending: p.trending || false,
+      tags: (p.tags || []).join(', '),
+    });
+    setExistingImages(p.images || []);
+    setImageFiles([]);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploading(true);
+    try {
+      let images = [...existingImages];
+      for (let i = 0; i < imageFiles.length; i++) {
+        const url = await uploadProductImage(imageFiles[i], editing || 'new', Date.now() + i);
+        images.push(url);
+      }
+
+      const productData = {
+        name: form.name,
+        slug: form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        description: form.description,
+        fabricDetails: '',
+        price: Number(form.price),
+        salePrice: form.salePrice ? Number(form.salePrice) : undefined,
+        categoryId: form.categoryId,
+        collectionId: form.collectionId,
+        images,
+        sizes: form.sizes.split(',').map((s) => s.trim()).filter(Boolean),
+        colors: form.colors.split(',').map((c) => c.trim()).filter(Boolean),
+        stock: Number(form.stock),
+        featured: form.featured,
+        bestSeller: form.bestSeller,
+        trending: form.trending,
+        tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      };
+
+      if (editing) {
+        await updateProduct(editing, productData);
+        toast.success('Product updated!');
+      } else {
+        await supabase.from('products').insert({
+          name: productData.name, slug: productData.slug,
+          description: productData.description, fabric_details: productData.fabricDetails,
+          price: productData.price, sale_price: productData.salePrice || null,
+          category_id: productData.categoryId, collection_id: productData.collectionId,
+          images: productData.images, sizes: productData.sizes, colors: productData.colors,
+          stock: productData.stock,
+          featured: productData.featured, best_seller: productData.bestSeller,
+          trending: productData.trending, tags: productData.tags,
+        });
+        toast.success('Product created!');
+      }
+      setShowForm(false);
+      loadProducts();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setUploading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this product?')) return;
+    await deleteProduct(id);
+    toast.success('Product deleted');
+    loadProducts();
+  };
+
+  const toggle = (key: 'featured' | 'bestSeller' | 'trending') =>
+    setForm((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  return (
+    <div className="bg-white border border-[#DDDDDD] p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xs uppercase tracking-[0.2em]">Products ({products.length})</h2>
+        <button onClick={openNew} className="btn btn-primary text-[10px]">{showForm ? 'Cancel' : 'Add Product'}</button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="mb-6 p-4 bg-[#F9F9F9] space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input placeholder="Product Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="input-field text-xs" />
+            <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input-field text-xs">
+              <option value="">Category</option>
+              {categories.map((c) => <option key={c.id} value={c.slug || c.id}>{c.name}</option>)}
+            </select>
+            <input placeholder="Collection ID (e.g. summer)" value={form.collectionId} onChange={(e) => setForm({ ...form, collectionId: e.target.value })} className="input-field text-xs" />
+            <input placeholder="Price *" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required className="input-field text-xs" />
+            <input placeholder="Sale Price" type="number" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className="input-field text-xs" />
+            <input placeholder="Sizes (S, M, L, XL)" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} className="input-field text-xs" />
+            <input placeholder="Colors (Black, Red, etc.)" value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} className="input-field text-xs" />
+            <input placeholder="Stock *" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required className="input-field text-xs" />
+            <input placeholder="Tags (new, exclusive, etc.)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="input-field text-xs" />
+            <div className="flex items-end gap-4 pb-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.featured} onChange={() => toggle('featured')} className="w-3.5 h-3.5 accent-black" />
+                <span className="text-[10px] uppercase tracking-[0.1em]">Featured</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.bestSeller} onChange={() => toggle('bestSeller')} className="w-3.5 h-3.5 accent-black" />
+                <span className="text-[10px] uppercase tracking-[0.1em]">Best Seller</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.trending} onChange={() => toggle('trending')} className="w-3.5 h-3.5 accent-black" />
+                <span className="text-[10px] uppercase tracking-[0.1em]">Trending</span>
+              </label>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.1em] opacity-60 block mb-1">Images (select multiple)</label>
+              <input type="file" multiple accept="image/*" onChange={(e) => setImageFiles(Array.from(e.target.files || []))} className="text-xs w-full" />
+              {imageFiles.length > 0 && <p className="text-[10px] mt-1 opacity-60">{imageFiles.length} new file(s) selected</p>}
+              {existingImages.length > 0 && <p className="text-[10px] mt-1 opacity-60">{existingImages.length} existing image(s)</p>}
+            </div>
+          </div>
+          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input-field text-xs w-full" />
+          <button type="submit" disabled={uploading} className="btn btn-primary text-[10px]">{uploading ? 'Uploading...' : editing ? 'Update Product' : 'Create Product'}</button>
+        </form>
+      )}
+
+      {loading ? (
+        <p className="text-xs opacity-40 text-center py-8">Loading...</p>
+      ) : products.length === 0 ? (
+        <p className="text-xs opacity-40 text-center py-8">No products yet. Add your first product!</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr className="border-b text-left">
+              <th className="pb-3 font-normal uppercase tracking-[0.1em] opacity-40">Product</th>
+              <th className="pb-3 font-normal uppercase tracking-[0.1em] opacity-40">Price</th>
+              <th className="pb-3 font-normal uppercase tracking-[0.1em] opacity-40">Stock</th>
+              <th className="pb-3 font-normal uppercase tracking-[0.1em] opacity-40">Tags</th>
+              <th className="pb-3 font-normal uppercase tracking-[0.1em] opacity-40">Actions</th>
+            </tr></thead>
+            <tbody>
+              {products.map((p) => (
+                <tr key={p.id} className="border-b last:border-0">
+                  <td className="py-3 uppercase tracking-[0.1em]">{p.name}</td>
+                  <td className="py-3">{p.salePrice ? <>{formatPrice(p.salePrice)} <span className="line-through opacity-40">{formatPrice(p.price)}</span></> : formatPrice(p.price)}</td>
+                  <td className="py-3">{p.stock}</td>
+                  <td className="py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {p.featured && <span className="text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 bg-black text-white">Featured</span>}
+                      {p.bestSeller && <span className="text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 bg-green-800 text-white">Best Seller</span>}
+                      {p.trending && <span className="text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 bg-blue-800 text-white">Trending</span>}
+                      {p.salePrice && <span className="text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 bg-red-700 text-white">Sale</span>}
+                    </div>
+                  </td>
+                  <td className="py-3">
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => openEdit(p)} className="underline text-[10px]">Edit</button>
+                      <button type="button" onClick={() => handleDelete(p.id)} className="underline text-[10px] text-red-500">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

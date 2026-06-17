@@ -1,0 +1,2 @@
+⚠ Slow filesystem detected. The benchmark took 207ms. If E:\signifywebsite\signifywebsite\.next/dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development

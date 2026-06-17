@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Anyone can read public images
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && request.auth.token.admin == true;
+    }
+
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && request.auth.token.admin == true;
+    }
+
+    match /categories/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && request.auth.token.admin == true;
+    }
+
+    match /blog/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && request.auth.token.admin == true;
+    }
+
+    // User uploads
+    match /users/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
