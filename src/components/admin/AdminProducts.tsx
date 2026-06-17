@@ -21,6 +21,7 @@ export default function AdminProducts() {
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [sizeChart, setSizeChart] = useState<{ columns: string[]; rows: { label: string; values: string[] }[] } | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -41,6 +42,7 @@ export default function AdminProducts() {
     setForm({ name: '', description: '', price: '', salePrice: '', categoryId: '', collectionId: '', sizes: '', colors: '', stock: '', featured: false, bestSeller: false, trending: false, tags: '', video: '' });
     setImageFiles([]);
     setExistingImages([]);
+    setSizeChart(null);
     setShowForm(true);
   };
 
@@ -56,6 +58,7 @@ export default function AdminProducts() {
     });
     setExistingImages(p.images || []);
     setImageFiles([]);
+    setSizeChart((p as any).size_chart || null);
     setShowForm(true);
   };
 
@@ -87,6 +90,7 @@ export default function AdminProducts() {
         trending: form.trending,
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         video: form.video || null,
+        size_chart: sizeChart || null,
       };
 
       if (editing) {
@@ -99,7 +103,7 @@ export default function AdminProducts() {
           price: productData.price, sale_price: productData.salePrice || null,
           category_id: productData.categoryId, collection_id: productData.collectionId,
           images: productData.images, sizes: productData.sizes, colors: productData.colors,
-          stock: productData.stock, video: form.video || null,
+          stock: productData.stock, video: form.video || null, size_chart: sizeChart || null,
           featured: productData.featured, best_seller: productData.bestSeller,
           trending: productData.trending, tags: productData.tags,
         });
@@ -166,6 +170,55 @@ export default function AdminProducts() {
               {imageFiles.length > 0 && <p className="text-[10px] mt-1 opacity-60">{imageFiles.length} new file(s) selected</p>}
               {existingImages.length > 0 && <p className="text-[10px] mt-1 opacity-60">{existingImages.length} existing image(s)</p>}
             </div>
+          </div>
+          <div className="border border-[#DDDDDD] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Size Chart</span>
+              {!sizeChart ? (
+                <button type="button" onClick={() => setSizeChart({ columns: ['S', 'M', 'L', 'XL'], rows: [{ label: 'Bust', values: ['34"', '36"', '38"', '40"'] }, { label: 'Waist', values: ['28"', '30"', '32"', '34"'] }, { label: 'Hips', values: ['36"', '38"', '40"', '42"'] }] })} className="text-[10px] underline">Add Size Chart</button>
+              ) : (
+                <button type="button" onClick={() => setSizeChart(null)} className="text-[10px] underline text-red-500">Remove</button>
+              )}
+            </div>
+            {sizeChart && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border border-[#DDDDDD] p-1.5 text-left font-normal text-[10px] uppercase tracking-[0.1em]">
+                        Measurement
+                        <button type="button" onClick={() => setSizeChart({ ...sizeChart, rows: [...sizeChart.rows, { label: '', values: Array(sizeChart.columns.length).fill('') }] })} className="ml-2 text-[9px] underline opacity-60">+row</button>
+                      </th>
+                      {sizeChart.columns.map((col, ci) => (
+                        <th key={ci} className="border border-[#DDDDDD] p-1.5 text-center font-normal text-[10px] uppercase tracking-[0.1em]">
+                          <input value={col} onChange={(e) => { const c = [...sizeChart.columns]; c[ci] = e.target.value; setSizeChart({ ...sizeChart, columns: c }); }} className="w-10 text-center bg-transparent border-b border-dotted border-[#DDDDDD] outline-none" />
+                          {sizeChart.columns.length > 1 && <button type="button" onClick={() => { const c = sizeChart.columns.filter((_, j) => j !== ci); const r = sizeChart.rows.map((row) => ({ ...row, values: row.values.filter((_, j) => j !== ci) })); setSizeChart({ columns: c, rows: r }); }} className="ml-1 text-red-500 text-[9px]">x</button>}
+                        </th>
+                      ))}
+                      <th className="border border-[#DDDDDD] p-1.5 w-6">
+                        <button type="button" onClick={() => setSizeChart({ ...sizeChart, columns: [...sizeChart.columns, ''], rows: sizeChart.rows.map((r) => ({ ...r, values: [...r.values, ''] })) })} className="text-[9px] underline opacity-60">+col</button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizeChart.rows.map((row, ri) => (
+                      <tr key={ri}>
+                        <td className="border border-[#DDDDDD] p-1.5">
+                          <input value={row.label} onChange={(e) => { const r = [...sizeChart.rows]; r[ri] = { ...r[ri], label: e.target.value }; setSizeChart({ ...sizeChart, rows: r }); }} className="w-20 bg-transparent border-b border-dotted border-[#DDDDDD] outline-none text-[10px] uppercase tracking-[0.1em]" />
+                          <button type="button" onClick={() => setSizeChart({ ...sizeChart, rows: sizeChart.rows.filter((_, j) => j !== ri) })} className="ml-1 text-red-500 text-[9px]">x</button>
+                        </td>
+                        {row.values.map((val, ci) => (
+                          <td key={ci} className="border border-[#DDDDDD] p-1.5 text-center">
+                            <input value={val} onChange={(e) => { const r = [...sizeChart.rows]; r[ri] = { ...r[ri], values: [...r[ri].values] }; r[ri].values[ci] = e.target.value; setSizeChart({ ...sizeChart, rows: r }); }} className="w-12 text-center bg-transparent border-b border-dotted border-[#DDDDDD] outline-none" />
+                          </td>
+                        ))}
+                        <td className="border border-[#DDDDDD] p-1.5" />
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
           <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input-field text-xs w-full" />
           <button type="submit" disabled={uploading} className="btn btn-primary text-[10px]">{uploading ? 'Uploading...' : editing ? 'Update Product' : 'Create Product'}</button>

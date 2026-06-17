@@ -119,16 +119,26 @@ export default function ProductPage() {
                     className={`w-10 h-10 text-[10px] uppercase border transition-colors ${selectedSize === size ? 'bg-[#1C1C1C] text-white border-[#1C1C1C]' : 'border-[#DDDDDD] hover:border-[#1C1C1C]'}`}>{size}</button>
                 ))}
               </div>
-              {showSizeGuide && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 bg-[#F9F9F9] text-[10px] uppercase tracking-[0.1em]">
-                  <table className="w-full text-left">
-                    <thead><tr className="border-b"><th className="py-1">Size</th><th className="py-1">Bust</th><th className="py-1">Waist</th><th className="py-1">Hips</th></tr></thead>
-                    <tbody>{[{ s: 'S', b: '34"', w: '28"', h: '36"' }, { s: 'M', b: '36"', w: '30"', h: '38"' }, { s: 'L', b: '38"', w: '32"', h: '40"' }, { s: 'XL', b: '40"', w: '34"', h: '42"' }].map((row) => (
-                      <tr key={row.s} className="border-b"><td className="py-1">{row.s}</td><td className="py-1">{row.b}</td><td className="py-1">{row.w}</td><td className="py-1">{row.h}</td></tr>
-                    ))}</tbody>
-                  </table>
-                </motion.div>
-              )}
+              {showSizeGuide && (() => {
+                const sc = (product as any).size_chart;
+                if (sc?.columns && sc?.rows) {
+                  return (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 bg-[#F9F9F9] text-[10px] uppercase tracking-[0.1em]">
+                      <table className="w-full text-left">
+                        <thead><tr className="border-b">{sc.columns.map((c: string, i: number) => <th key={i} className="py-1">{c || 'Size'}</th>)}</tr></thead>
+                        <tbody>{sc.rows.map((row: any, ri: number) => (
+                          <tr key={ri} className="border-b"><td className="py-1 font-medium">{row.label}</td>{row.values.map((v: string, vi: number) => <td key={vi} className="py-1">{v}</td>)}</tr>
+                        ))}</tbody>
+                      </table>
+                    </motion.div>
+                  );
+                }
+                return (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 bg-[#F9F9F9] text-[10px] uppercase tracking-[0.1em]">
+                    <p className="opacity-60">No size chart available for this product.</p>
+                  </motion.div>
+                );
+              })()}
             </div>
 
             <div className="mt-6">

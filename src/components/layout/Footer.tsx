@@ -62,14 +62,14 @@ export default function Footer() {
         </div>
         <div className="border-t border-white/10 mt-10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs opacity-40">
-            &copy; {new Date().getFullYear()} SIGNIFY BY AHON. All rights reserved.
+            &copy; {new Date().getFullYear()} SIGNIFY BY AHON. All rights reserved. Powered by MESO Business Solutions.
           </p>
           <div className="flex gap-6 text-xs opacity-40">
             <Link href="/privacy" className="hover:opacity-100 transition-opacity">Privacy</Link>
             <Link href="/terms" className="hover:opacity-100 transition-opacity">Terms</Link>
           </div>
         </div>
-        <div className="mt-6 pt-4 text-center">
+        <div className="mt-4 pt-2 text-center">
           <p className="text-[9px] opacity-30 tracking-[0.1em] uppercase">
             This website made by MESO Business Solutions DEV.
           </p>
