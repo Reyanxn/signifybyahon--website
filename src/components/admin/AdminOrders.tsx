@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { getOrders, updateOrderStatus } from '@/lib/supabaseServices';
 import { formatPrice, generateInvoiceHTML } from '@/utils/helpers';
 import { supabase } from '@/lib/supabase';
-import type { Order } from '@/types';
-import { HiArrowLeft, HiPrinter, HiCheck, HiX } from 'react-icons/hi';
+import { HiArrowLeft, HiPrinter, HiTrash } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
 const statuses = ['received', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 const paymentStatuses = ['pending', 'paid', 'failed', 'refunded'];
+const unfulfilledStatuses = ['received', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery'];
 
 const statusColors: Record<string, string> = {
   received: 'bg-yellow-100 text-yellow-800',
@@ -27,6 +27,9 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => { loadOrders(); }, []);
 
@@ -52,7 +55,39 @@ export default function AdminOrders() {
     if (selectedOrder?.id === id) setSelectedOrder({ ...selectedOrder, payment_status: paymentStatus });
   };
 
-  const filteredOrders = filterStatus === 'all' ? orders : orders.filter((o) => o.order_status === filterStatus);
+  const handleDeleteOrder = async (id: string) => {
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Order deleted');
+    setDeleteConfirm(null);
+    setSelectedOrder(null);
+    loadOrders();
+  };
+
+  const filteredOrders = orders.filter((o) => {
+    if (filterStatus === 'unfulfilled') {
+      if (!unfulfilledStatuses.includes(o.order_status)) return false;
+    } else if (filterStatus !== 'all') {
+      if (o.order_status !== filterStatus) return false;
+    }
+    if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false;
+    if (dateTo) {
+      const endOfDay = new Date(dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (new Date(o.created_at) > endOfDay) return false;
+    }
+    return true;
+  });
+
+  const ordersByDay = filteredOrders.reduce((acc: Record<string, { orders: number; revenue: number }>, o: any) => {
+    const day = new Date(o.created_at).toLocaleDateString();
+    if (!acc[day]) acc[day] = { orders: 0, revenue: 0 };
+    acc[day].orders += 1;
+    acc[day].revenue += o.total_amount || 0;
+    return acc;
+  }, {});
+
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
   if (selectedOrder) {
     const o = selectedOrder;
@@ -149,10 +184,21 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex items-center justify-between">
           <button onClick={() => { const w = window.open('', '_blank'); if (w) { w.document.write(generateInvoiceHTML(o)); w.document.close(); } }} className="btn btn-outline text-[10px] flex items-center gap-1">
             <HiPrinter className="w-3 h-3" /> Print Invoice
           </button>
+          {deleteConfirm === o.id ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-red-600">Delete this order?</span>
+              <button onClick={() => handleDeleteOrder(o.id)} className="text-[10px] uppercase bg-red-600 text-white px-3 py-1 tracking-[0.1em]">Yes</button>
+              <button onClick={() => setDeleteConfirm(null)} className="text-[10px] uppercase border border-[#DDDDDD] px-3 py-1 tracking-[0.1em]">No</button>
+            </div>
+          ) : (
+            <button onClick={() => setDeleteConfirm(o.id)} className="text-[10px] flex items-center gap-1 text-red-600 hover:opacity-70 transition-opacity">
+              <HiTrash className="w-3 h-3" /> Delete Order
+            </button>
+          )}
         </div>
       </div>
     );
@@ -161,14 +207,55 @@ export default function AdminOrders() {
   return (
     <div className="bg-white border border-[#DDDDDD] p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xs uppercase tracking-[0.2em]">Orders ({orders.length})</h2>
+        <h2 className="text-xs uppercase tracking-[0.2em]">Orders ({filteredOrders.length})</h2>
         <div className="flex items-center gap-2">
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="text-[10px] uppercase border border-[#DDDDDD] p-1.5" />
+          <span className="text-[10px] opacity-40">—</span>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="text-[10px] uppercase border border-[#DDDDDD] p-1.5" />
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-[10px] uppercase border border-[#DDDDDD] p-1.5">
             <option value="all">All Orders</option>
+            <option value="unfulfilled">Unfulfilled</option>
             {statuses.map((s) => (<option key={s} value={s}>{s.replace(/_/g, ' ')}</option>))}
           </select>
         </div>
       </div>
+
+      {filteredOrders.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          <div className="border border-[#DDDDDD] p-4 text-center">
+            <p className="text-lg font-medium">{filteredOrders.length}</p>
+            <p className="text-[10px] uppercase tracking-[0.1em] opacity-40">Orders</p>
+          </div>
+          <div className="border border-[#DDDDDD] p-4 text-center">
+            <p className="text-lg font-medium">{formatPrice(totalRevenue)}</p>
+            <p className="text-[10px] uppercase tracking-[0.1em] opacity-40">Revenue</p>
+          </div>
+          <div className="border border-[#DDDDDD] p-4 text-center">
+            <p className="text-lg font-medium">{Object.keys(ordersByDay).length}</p>
+            <p className="text-[10px] uppercase tracking-[0.1em] opacity-40">Days</p>
+          </div>
+        </div>
+      )}
+
+      {Object.keys(ordersByDay).length > 0 && (
+        <div className="border border-[#DDDDDD] mb-6 overflow-hidden">
+          <div className="bg-[#F9F9F9] px-4 py-2 border-b border-[#DDDDDD]">
+            <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Daily Breakdown</span>
+          </div>
+          <div className="divide-y divide-[#DDDDDD] max-h-48 overflow-y-auto">
+            {Object.entries(ordersByDay).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime()).map(([day, data]) => (
+              <div key={day} className="flex items-center justify-between px-4 py-2 text-xs">
+                <span className="uppercase tracking-[0.1em] opacity-60">{day}</span>
+                <div className="flex items-center gap-4">
+                  <span>{data.orders} order{data.orders !== 1 ? 's' : ''}</span>
+                  <span className="font-medium">{formatPrice(data.revenue)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-xs opacity-40 text-center py-8">Loading...</p>
       ) : filteredOrders.length === 0 ? (
