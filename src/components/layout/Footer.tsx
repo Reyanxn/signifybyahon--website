@@ -50,18 +50,9 @@ export default function Footer() {
           </div>
           <div>
             <h4 className="text-xs uppercase tracking-[0.2em] mb-6">Follow Us</h4>
-            <div className="flex gap-4">
-              {['facebook', 'instagram', 'youtube'].map((social) => (
-                <a
-                  key={social}
-                  href={`https://${social}.com`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs uppercase tracking-[0.2em] opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  {social}
-                </a>
-              ))}
+            <div className="flex flex-col gap-3">
+              <a href="https://www.facebook.com/signifybyahons" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.2em] opacity-60 hover:opacity-100 transition-opacity">Facebook</a>
+              <a href="https://www.instagram.com/signifybyahon" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.2em] opacity-60 hover:opacity-100 transition-opacity">Instagram</a>
             </div>
             <p className="mt-6 text-xs opacity-40">
               Dhaka, Bangladesh<br />
@@ -77,6 +68,11 @@ export default function Footer() {
             <Link href="/privacy" className="hover:opacity-100 transition-opacity">Privacy</Link>
             <Link href="/terms" className="hover:opacity-100 transition-opacity">Terms</Link>
           </div>
+        </div>
+        <div className="mt-6 pt-4 text-center">
+          <p className="text-[9px] opacity-30 tracking-[0.1em] uppercase">
+            This website made by MESO Business Solutions DEV.
+          </p>
         </div>
       </div>
     </footer>

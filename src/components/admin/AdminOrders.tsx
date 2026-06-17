@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getOrders, updateOrderStatus } from '@/lib/supabaseServices';
 import { formatPrice, generateInvoiceHTML } from '@/utils/helpers';
 import { supabase } from '@/lib/supabase';
@@ -238,22 +238,25 @@ export default function AdminOrders() {
       )}
 
       {Object.keys(ordersByDay).length > 0 && (
-        <div className="border border-[#DDDDDD] mb-6 overflow-hidden">
-          <div className="bg-[#F9F9F9] px-4 py-2 border-b border-[#DDDDDD]">
-            <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Daily Breakdown</span>
-          </div>
-          <div className="divide-y divide-[#DDDDDD] max-h-48 overflow-y-auto">
-            {Object.entries(ordersByDay).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime()).map(([day, data]) => (
-              <div key={day} className="flex items-center justify-between px-4 py-2 text-xs">
-                <span className="uppercase tracking-[0.1em] opacity-60">{day}</span>
-                <div className="flex items-center gap-4">
-                  <span>{data.orders} order{data.orders !== 1 ? 's' : ''}</span>
-                  <span className="font-medium">{formatPrice(data.revenue)}</span>
+        <>
+          <div className="border border-[#DDDDDD] mb-6 overflow-hidden">
+            <div className="bg-[#F9F9F9] px-4 py-2 border-b border-[#DDDDDD] flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Daily Breakdown</span>
+            </div>
+            <div className="divide-y divide-[#DDDDDD] max-h-48 overflow-y-auto">
+              {Object.entries(ordersByDay).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime()).map(([day, data]) => (
+                <div key={day} className="flex items-center justify-between px-4 py-2 text-xs">
+                  <span className="uppercase tracking-[0.1em] opacity-60">{day}</span>
+                  <div className="flex items-center gap-4">
+                    <span>{data.orders} order{data.orders !== 1 ? 's' : ''}</span>
+                    <span className="font-medium">{formatPrice(data.revenue)}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+          <OrderCalendar orders={filteredOrders} ordersByDay={ordersByDay} onSelectDay={(d) => { setDateFrom(d); setDateTo(d); }} />
+        </>
       )}
 
       {loading ? (
@@ -288,6 +291,80 @@ export default function AdminOrders() {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function OrderCalendar({ orders, ordersByDay, onSelectDay }: {
+  orders: any[];
+  ordersByDay: Record<string, { orders: number; revenue: number }>;
+  onSelectDay: (dateStr: string) => void;
+}) {
+  const today = new Date();
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+  const monthLabel = new Date(viewYear, viewMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const dayTotals = useMemo(() => {
+    const totals: Record<string, { orders: number; revenue: number }> = {};
+    orders.forEach((o) => {
+      const d = new Date(o.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!totals[key]) totals[key] = { orders: 0, revenue: 0 };
+      totals[key].orders += 1;
+      totals[key].revenue += o.total_amount || 0;
+    });
+    return totals;
+  }, [orders]);
+
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); } };
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else { setViewMonth(viewMonth + 1); } };
+
+  const getDayKey = (day: number) => `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const padClass = (day: number) => {
+    const key = getDayKey(day);
+    const data = dayTotals[key];
+    if (!data) return 'text-[#DDDDDD]';
+    if (data.orders >= 5) return 'text-green-700 font-semibold';
+    if (data.orders >= 2) return 'text-[#1C1C1C] font-medium';
+    return 'text-[#1C1C1C]';
+  };
+
+  return (
+    <div className="border border-[#DDDDDD] mb-6">
+      <div className="bg-[#F9F9F9] px-4 py-2 border-b border-[#DDDDDD] flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Order Calendar</span>
+        <div className="flex items-center gap-3">
+          <button onClick={prevMonth} className="text-[10px] uppercase opacity-40 hover:opacity-100">&lt;</button>
+          <span className="text-[10px] uppercase tracking-[0.1em]">{monthLabel}</span>
+          <button onClick={nextMonth} className="text-[10px] uppercase opacity-40 hover:opacity-100">&gt;</button>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase tracking-[0.1em] opacity-40 mb-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (<div key={d} className="py-1">{d}</div>))}
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {Array.from({ length: firstDayOfWeek }).map((_, i) => (<div key={`empty-${i}`} />))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const key = getDayKey(day);
+            const data = dayTotals[key];
+            const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+            return (
+              <button key={day} onClick={() => onSelectDay(key)}
+                className={`py-2 rounded text-xs transition-colors hover:bg-[#F5F5F5] relative ${padClass(day)} ${isToday ? 'ring-1 ring-[#1C1C1C]' : ''}`}
+              >
+                <span>{day}</span>
+                {data && <div className="text-[8px] opacity-60 mt-0.5">{data.orders}</div>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

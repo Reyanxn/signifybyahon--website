@@ -69,6 +69,15 @@ export default function ProductPage() {
                 >{img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" />}</button>
               ))}
             </div>
+            {(product as any).video && (
+              <div className="mt-3 aspect-video bg-[#F5F5F5]">
+                {(product as any).video.includes('youtube') || (product as any).video.includes('youtu.be') ? (
+                  <iframe src={(product as any).video.replace('watch?v=', 'embed/')} className="w-full h-full" allowFullScreen />
+                ) : (
+                  <video src={(product as any).video} className="w-full h-full object-cover" controls />
+                )}
+              </div>
+            )}
           </div>
 
           <div>
@@ -131,9 +140,15 @@ export default function ProductPage() {
               </div>
             </div>
 
+            {product.stock === 0 && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-xs text-red-700 uppercase tracking-[0.1em] text-center">Stock Out — This product is currently unavailable</div>
+            )}
+            {product.stock > 0 && product.stock <= 5 && (
+              <div className="mt-4 text-[10px] uppercase tracking-[0.1em] opacity-60">Only {product.stock} left in stock</div>
+            )}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Button size="lg" className="flex-1" onClick={handleAddToCart}>Add to Cart</Button>
-              <Button size="lg" variant="outline" className="flex-1" onClick={handleAddToCart}>Buy Now</Button>
+              <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={product.stock === 0}>Add to Cart</Button>
+              <Button size="lg" variant="outline" className="flex-1" onClick={handleAddToCart} disabled={product.stock === 0}>Buy Now</Button>
             </div>
 
             <div className="mt-4 flex items-center gap-6">

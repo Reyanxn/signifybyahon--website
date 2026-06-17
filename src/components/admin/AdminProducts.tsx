@@ -17,7 +17,7 @@ export default function AdminProducts() {
   const [form, setForm] = useState({
     name: '', description: '', price: '', salePrice: '',
     categoryId: '', collectionId: '', sizes: '', colors: '', stock: '',
-    featured: false, bestSeller: false, trending: false, tags: '',
+    featured: false, bestSeller: false, trending: false, tags: '', video: '',
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -38,7 +38,7 @@ export default function AdminProducts() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', description: '', price: '', salePrice: '', categoryId: '', collectionId: '', sizes: '', colors: '', stock: '', featured: false, bestSeller: false, trending: false, tags: '' });
+    setForm({ name: '', description: '', price: '', salePrice: '', categoryId: '', collectionId: '', sizes: '', colors: '', stock: '', featured: false, bestSeller: false, trending: false, tags: '', video: '' });
     setImageFiles([]);
     setExistingImages([]);
     setShowForm(true);
@@ -52,7 +52,7 @@ export default function AdminProducts() {
       categoryId: p.categoryId, collectionId: p.collectionId || '',
       sizes: p.sizes.join(', '), colors: p.colors.join(', '), stock: String(p.stock),
       featured: p.featured || false, bestSeller: p.bestSeller || false, trending: p.trending || false,
-      tags: (p.tags || []).join(', '),
+      tags: (p.tags || []).join(', '), video: (p as any).video || '',
     });
     setExistingImages(p.images || []);
     setImageFiles([]);
@@ -86,10 +86,11 @@ export default function AdminProducts() {
         bestSeller: form.bestSeller,
         trending: form.trending,
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        video: form.video || null,
       };
 
       if (editing) {
-        await updateProduct(editing, productData);
+        await updateProduct(editing, { ...productData, video: form.video || null });
         toast.success('Product updated!');
       } else {
         await supabase.from('products').insert({
@@ -98,7 +99,7 @@ export default function AdminProducts() {
           price: productData.price, sale_price: productData.salePrice || null,
           category_id: productData.categoryId, collection_id: productData.collectionId,
           images: productData.images, sizes: productData.sizes, colors: productData.colors,
-          stock: productData.stock,
+          stock: productData.stock, video: form.video || null,
           featured: productData.featured, best_seller: productData.bestSeller,
           trending: productData.trending, tags: productData.tags,
         });
@@ -143,6 +144,7 @@ export default function AdminProducts() {
             <input placeholder="Sizes (S, M, L, XL)" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} className="input-field text-xs" />
             <input placeholder="Colors (Black, Red, etc.)" value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} className="input-field text-xs" />
             <input placeholder="Stock *" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required className="input-field text-xs" />
+            <input placeholder="Video URL (optional)" value={form.video} onChange={(e) => setForm({ ...form, video: e.target.value })} className="input-field text-xs" />
             <input placeholder="Tags (new, exclusive, etc.)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="input-field text-xs" />
             <div className="flex items-end gap-4 pb-1">
               <label className="flex items-center gap-2 cursor-pointer">

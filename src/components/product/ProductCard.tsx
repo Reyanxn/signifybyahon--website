@@ -11,6 +11,7 @@ interface ProductCardProps {
     name: string;
     price: number;
     salePrice?: number;
+    stock?: number;
     image?: string;
     images?: string[];
     category?: string;
@@ -20,6 +21,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const hasSecondImage = (product.images?.length || 0) >= 2;
+  const isOutOfStock = product.stock === 0;
 
   return (
     <div className="group" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
@@ -46,20 +48,25 @@ export default function ProductCard({ product }: ProductCardProps) {
               {product.name}
             </div>
           )}
-          {product.salePrice && (
-            <span className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.1em] text-[#E40100]">
-              Sale
-            </span>
-          )}
+          <div className="absolute top-3 left-3 flex flex-col gap-1">
+            {product.salePrice && (
+              <span className="text-[10px] uppercase tracking-[0.1em] text-[#E40100] bg-white/90 px-2 py-0.5">Sale</span>
+            )}
+            {isOutOfStock && (
+              <span className="text-[10px] uppercase tracking-[0.1em] text-white bg-[#1C1C1C] px-2 py-0.5">Stock Out</span>
+            )}
+          </div>
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
             <button className="w-8 h-8 bg-white flex items-center justify-center hover:bg-[#F5F5F5]" aria-label="Add to wishlist">
               <HiHeart className="w-3.5 h-3.5" />
             </button>
           </div>
           <div className="absolute bottom-0 left-0 right-0 bg-white py-3 px-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-            <button className="w-full flex items-center justify-center gap-2 bg-[#1C1C1C] text-white py-2.5 text-[10px] uppercase tracking-[0.2em] hover:opacity-90 transition-opacity">
+            <button disabled={isOutOfStock} className={`w-full flex items-center justify-center gap-2 py-2.5 text-[10px] uppercase tracking-[0.2em] transition-opacity ${
+              isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1C1C1C] text-white hover:opacity-90'
+            }`}>
               <HiShoppingBag className="w-3.5 h-3.5" />
-              Add to Cart
+              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
             </button>
           </div>
         </div>
