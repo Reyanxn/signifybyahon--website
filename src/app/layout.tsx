@@ -3,6 +3,7 @@ import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import AuthWrapper from '@/components/layout/AuthWrapper';
+import PopupModal from '@/components/layout/PopupModal';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-screen">{children}</main>
           <Footer />
         </AuthWrapper>
+        <PopupModal />
         <Toaster
           position="top-right"
           toastOptions={{
