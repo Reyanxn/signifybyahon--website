@@ -69,11 +69,6 @@ export default function Footer() {
             <Link href="/terms" className="hover:opacity-100 transition-opacity">Terms</Link>
           </div>
         </div>
-        <div className="mt-4 pt-2 text-center">
-          <p className="text-[9px] opacity-30 tracking-[0.1em] uppercase">
-            This website made by MESO Business Solutions DEV.
-          </p>
-        </div>
       </div>
     </footer>
   );
