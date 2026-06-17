@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.visits (
   region TEXT,
   country TEXT,
   page TEXT,
+  referrer TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
