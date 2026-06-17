@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { HiHeart, HiShare, HiMinus, HiPlus, HiTruck, HiRefresh, HiShieldCheck } from 'react-icons/hi';
@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 
 export default function ProductPage() {
   const params = useParams();
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -158,7 +159,7 @@ export default function ProductPage() {
             )}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={product.stock === 0}>Add to Cart</Button>
-              <Button size="lg" variant="outline" className="flex-1" onClick={handleAddToCart} disabled={product.stock === 0}>Buy Now</Button>
+              <Button size="lg" variant="outline" className="flex-1" onClick={() => { if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; } addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor }); router.push('/checkout'); }} disabled={product.stock === 0}>Buy Now</Button>
             </div>
 
             <div className="mt-4 flex items-center gap-6">

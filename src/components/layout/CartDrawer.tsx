@@ -45,7 +45,7 @@ export default function CartDrawer() {
                 <div className="flex-1 overflow-y-auto p-5 space-y-3">
                   {items.map((item) => (
                     <div key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-3 bg-[#F9F9F9] p-3">
-                      <div className="w-16 h-20 bg-gray-200 flex-shrink-0" />
+                      <div className="w-16 h-20 bg-gray-200 flex-shrink-0 overflow-hidden">{item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs uppercase tracking-[0.1em] truncate">{item.name}</p>
                         <p className="text-[10px] opacity-40 mt-0.5">{item.size} / {item.color}</p>

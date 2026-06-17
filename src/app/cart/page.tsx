@@ -37,7 +37,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <div key={`${item.productId}-${item.size}-${item.color}`} className="flex gap-4 p-4 bg-[#F9F9F9]">
-                <div className="w-20 h-24 bg-gray-200 flex-shrink-0" />
+                <div className="w-20 h-24 bg-gray-200 flex-shrink-0 overflow-hidden">{item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between">
                     <div>
