@@ -17,9 +17,11 @@ import AdminBlogs from '@/components/admin/AdminBlogs';
 import AdminCategories from '@/components/admin/AdminCategories';
 import AdminReels from '@/components/admin/AdminReels';
 import AdminPopups from '@/components/admin/AdminPopups';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
 
 const adminTabs = [
   { id: 'dashboard', label: 'Dashboard', icon: HiChartBar },
+  { id: 'analytics', label: 'Analytics', icon: HiChartBar },
   { id: 'products', label: 'Products', icon: HiCube },
   { id: 'categories', label: 'Categories', icon: HiCollection },
   { id: 'orders', label: 'Orders', icon: HiShoppingBag },
@@ -74,6 +76,7 @@ export default function AdminPage() {
 
           <div className="lg:col-span-5 space-y-6">
             {activeTab === 'dashboard' && <AdminDashboard />}
+            {activeTab === 'analytics' && <AdminAnalytics />}
             {activeTab === 'products' && <AdminProducts />}
             {activeTab === 'orders' && <AdminOrders />}
             {activeTab === 'customers' && <AdminCustomers />}
