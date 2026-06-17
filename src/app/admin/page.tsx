@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection,
 } from 'react-icons/hi';
 import { getOrders, getProducts, getUsers } from '@/lib/supabaseServices';
 import { formatPrice } from '@/utils/helpers';
+import { useAuth } from '@/context/AuthContext';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminOrders from '@/components/admin/AdminOrders';
 import AdminCoupons from '@/components/admin/AdminCoupons';
@@ -26,7 +28,17 @@ const adminTabs = [
 ];
 
 export default function AdminPage() {
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    if (!loading && (!user || user.role !== 'admin')) {
+      router.push('/auth');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user || user.role !== 'admin') return null;
 
   return (
     <div className="pt-16 md:pt-20 min-h-screen bg-[#F9F9F9]">
@@ -36,7 +48,11 @@ export default function AdminPage() {
             <h1 className="text-lg md:text-xl tracking-[0.2em] font-normal">Admin Dashboard</h1>
             <p className="text-[10px] uppercase tracking-[0.2em] opacity-40 mt-1">Manage your store</p>
           </div>
-          <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-green-500 rounded-full" /><span className="text-[10px] uppercase tracking-[0.1em] opacity-40">Online</span></div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => { logout(); router.push('/auth'); }} className="text-[10px] uppercase tracking-[0.1em] opacity-40 hover:opacity-100 transition-opacity">Logout</button>
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+            <span className="text-[10px] uppercase tracking-[0.1em] opacity-40">{user?.email}</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
