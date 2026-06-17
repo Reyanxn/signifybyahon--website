@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { uploadFile } from '@/lib/supabaseServices';
+import ImageCropper from '@/components/ui/ImageCropper';
 import toast from 'react-hot-toast';
 
 export default function AdminPopups() {
@@ -10,7 +11,9 @@ export default function AdminPopups() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [rawFile, setRawFile] = useState<File | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
   const [link, setLink] = useState('');
   const [active, setActive] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -20,13 +23,19 @@ export default function AdminPopups() {
   const loadPopups = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('popups').select('*').order('order', { ascending: true });
+    if (error) {
+      if (error.message?.includes('does not exist')) {
+        toast.error('Popup table not found. Run the SQL in Supabase editor first.');
+      }
+    }
     if (!error && data) setPopups(data);
     setLoading(false);
   };
 
   const openNew = () => {
     setEditingId(null);
-    setImageFile(null);
+    setRawFile(null);
+    setCropFile(null);
     setLink('');
     setActive(true);
     setShowForm(true);
@@ -34,23 +43,43 @@ export default function AdminPopups() {
 
   const openEdit = (p: any) => {
     setEditingId(p.id);
-    setImageFile(null);
+    setRawFile(null);
+    setCropFile(null);
     setLink(p.link || '');
     setActive(p.active);
     setShowForm(true);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setRawFile(file);
+      setCropFile(null);
+      setShowCropper(true);
+    }
+  };
+
+  const handleCropDone = (cropped: File) => {
+    setCropFile(cropped);
+    setShowCropper(false);
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setRawFile(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile && !editingId) { toast.error('Select an image'); return; }
+    if (!cropFile && !editingId) { toast.error('Select an image'); return; }
     setUploading(true);
     try {
       let imageUrl = '';
-      if (imageFile) {
-        imageUrl = await uploadFile(imageFile, `popups/${Date.now()}`);
+      if (cropFile) {
+        imageUrl = await uploadFile(cropFile, `popups/${Date.now()}`);
       }
-      const data = { link: link || null, active };
-      if (imageUrl) (data as any).image = imageUrl;
+      const data: any = { link: link || null, active };
+      if (imageUrl) data.image = imageUrl;
 
       if (editingId) {
         const { error } = await supabase.from('popups').update(data).eq('id', editingId);
@@ -99,6 +128,10 @@ export default function AdminPopups() {
 
   return (
     <div className="bg-white border border-[#DDDDDD] p-6">
+      {showCropper && rawFile && (
+        <ImageCropper file={rawFile} onCrop={handleCropDone} onCancel={handleCropCancel} />
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xs uppercase tracking-[0.2em]">Popups ({popups.length})</h2>
         <button onClick={openNew} className="btn btn-primary text-[10px]">{showForm ? 'Cancel' : 'Add Popup'}</button>
@@ -108,15 +141,16 @@ export default function AdminPopups() {
         <form onSubmit={handleSubmit} className="mb-6 p-4 bg-[#F9F9F9] space-y-3">
           <div>
             <label className="text-[10px] uppercase tracking-[0.1em] opacity-60 block mb-1">Popup Image (square)</label>
-            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="text-xs w-full" />
-            {!imageFile && editingId && <p className="text-[10px] mt-1 opacity-40">Leave empty to keep existing image</p>}
+            <input type="file" accept="image/*" onChange={handleFileSelect} className="text-xs w-full" />
+            {cropFile && <p className="text-[10px] mt-1 text-green-600">Image cropped to square ✓</p>}
+            {!rawFile && editingId && <p className="text-[10px] mt-1 opacity-40">Leave empty to keep existing image</p>}
           </div>
           <input placeholder="Link (optional)" value={link} onChange={(e) => setLink(e.target.value)} className="input-field text-xs" />
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="w-3.5 h-3.5 accent-black" />
             <span className="text-[10px] uppercase tracking-[0.1em]">Active</span>
           </label>
-          <button type="submit" disabled={uploading} className="btn btn-primary text-[10px]">{uploading ? 'Uploading...' : editingId ? 'Update' : 'Create'}</button>
+          <button type="submit" disabled={uploading || !cropFile && !editingId} className="btn btn-primary text-[10px]">{uploading ? 'Uploading...' : editingId ? 'Update' : 'Create'}</button>
         </form>
       )}
 
