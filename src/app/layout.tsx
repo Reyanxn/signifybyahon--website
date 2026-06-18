@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 import AuthWrapper from '@/components/layout/AuthWrapper';
 import PopupModal from '@/components/layout/PopupModal';
 import VisitTracker from '@/components/layout/VisitTracker';
+import MetaPixel from '@/components/layout/MetaPixel';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </AuthWrapper>
         <PopupModal />
         <VisitTracker />
+        <MetaPixel />
         <Toaster
           position="top-right"
           toastOptions={{

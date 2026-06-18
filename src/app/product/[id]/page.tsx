@@ -11,6 +11,7 @@ import ProductCard from '@/components/product/ProductCard';
 import { formatPrice } from '@/utils/helpers';
 import { useCartStore } from '@/store/cartStore';
 import { getProduct } from '@/lib/supabaseServices';
+import { trackEvent } from '@/components/layout/MetaPixel';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -31,6 +32,7 @@ export default function ProductPage() {
       setLoading(true);
       getProduct(params.id as string).then((data) => {
         setProduct(data as Product);
+        if (data) trackEvent('ViewContent', { content_ids: [data.id], content_type: 'product', value: data.salePrice || data.price, currency: 'BDT' });
         setLoading(false);
       });
     }
@@ -42,6 +44,7 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; }
     addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor });
+    trackEvent('AddToCart', { content_ids: [product.id], content_type: 'product', value: product.salePrice || product.price, currency: 'BDT' });
     toast.success('Added to cart!');
   };
 
@@ -121,7 +124,7 @@ export default function ProductPage() {
                 ))}
               </div>
               {showSizeGuide && (() => {
-                const sc = (product as any).size_chart;
+                const sc = (product as any).sizeChart;
                 if (sc?.columns && sc?.rows) {
                   return (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-4 bg-[#F9F9F9] text-[10px] uppercase tracking-[0.1em]">
@@ -159,7 +162,7 @@ export default function ProductPage() {
             )}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={product.stock === 0}>Add to Cart</Button>
-              <Button size="lg" variant="outline" className="flex-1" onClick={() => { if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; } addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor }); router.push('/checkout'); }} disabled={product.stock === 0}>Buy Now</Button>
+              <Button size="lg" variant="outline" className="flex-1" onClick={() => { if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; } addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor }); trackEvent('AddToCart', { content_ids: [product.id], content_type: 'product', value: product.salePrice || product.price, currency: 'BDT' }); router.push('/checkout'); }} disabled={product.stock === 0}>Buy Now</Button>
             </div>
 
             <div className="mt-4 flex items-center gap-6">

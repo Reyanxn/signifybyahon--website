@@ -58,7 +58,7 @@ export default function AdminProducts() {
     });
     setExistingImages(p.images || []);
     setImageFiles([]);
-    setSizeChart((p as any).size_chart || null);
+    setSizeChart((p as any).sizeChart || null);
     setShowForm(true);
   };
 

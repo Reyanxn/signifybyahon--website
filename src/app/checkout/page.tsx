@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cartStore';
 import { formatPrice, generateOrderId } from '@/utils/helpers';
 import { SHIPPING, SHIPPING_RATES, PAYMENT_METHODS } from '@/utils/constants';
 import { addOrder } from '@/lib/supabaseServices';
+import { trackEvent } from '@/components/layout/MetaPixel';
 import toast from 'react-hot-toast';
 
 const cities = ['Dhaka', 'Chittagong', 'Sylhet', 'Khulna', 'Rajshahi', 'Barisal', 'Rangpur', 'Mymensingh'];
@@ -47,6 +48,7 @@ export default function CheckoutPage() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      trackEvent('Purchase', { value: total, currency: 'BDT', content_ids: items.map((i) => i.productId), content_type: 'product' });
       clearCart();
       toast.success('Order placed successfully!');
       router.push(`/order/${orderId}`);
