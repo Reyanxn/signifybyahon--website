@@ -10,7 +10,7 @@ import StarRating from '@/components/ui/StarRating';
 import ProductCard from '@/components/product/ProductCard';
 import { formatPrice, getVisibleSizes, getSizeStockByName, getTotalStock } from '@/utils/helpers';
 import { useCartStore } from '@/store/cartStore';
-import { getProduct, getProductReviews, addReview } from '@/lib/supabaseServices';
+import { getProduct, getProductReviews } from '@/lib/supabaseServices';
 import { trackEvent } from '@/components/layout/MetaPixel';
 import type { Product, Review } from '@/types';
 import toast from 'react-hot-toast';
@@ -220,11 +220,16 @@ export default function ProductPage() {
                     onClick={async () => {
                       setSubmittingReview(true);
                       try {
-                        await addReview({ productId: product.id, userId: 'guest', userName: reviewForm.userName, rating: reviewForm.rating, comment: reviewForm.comment, approved: false, featured: false });
+                        const res = await fetch('/api/reviews', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ productId: product.id, userId: 'guest', userName: reviewForm.userName, rating: reviewForm.rating, comment: reviewForm.comment }),
+                        });
+                        if (!res.ok) throw new Error('Failed');
                         toast.success('Review submitted! Awaiting approval.');
                         setReviewForm({ userName: '', rating: 5, comment: '' });
                         getProductReviews(product.id).then(setReviews);
-                      } catch { toast.error('Failed to submit'); }
+                      } catch { toast.error('Failed to submit review'); }
                       setSubmittingReview(false);
                     }}
                     className="btn btn-primary text-[10px]">{submittingReview ? 'Submitting...' : 'Submit Review'}</button>

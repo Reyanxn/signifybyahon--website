@@ -13,6 +13,7 @@ export default function AdminHomepage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', type: 'custom', alignment: 'left', productIds: [] as string[], active: true });
 
   useEffect(() => {
@@ -29,12 +30,19 @@ export default function AdminHomepage() {
 
   const openNew = () => {
     setEditing(null);
+    setShowForm(true);
     setForm({ title: '', type: 'custom', alignment: 'left', productIds: [], active: true });
   };
 
   const openEdit = (s: HomepageSection) => {
     setEditing(s.id);
+    setShowForm(true);
     setForm({ title: s.title, type: s.type, alignment: s.alignment, productIds: s.productIds || [], active: s.active });
+  };
+
+  const cancelForm = () => {
+    setShowForm(false);
+    setEditing(null);
   };
 
   const handleSave = async () => {
@@ -47,7 +55,7 @@ export default function AdminHomepage() {
         await addHomepageSection({ ...form, displayOrder: sections.length + 1 });
         toast.success('Section created');
       }
-      setEditing(null);
+      cancelForm();
       load();
     } catch (err: any) {
       toast.error(err.message);
@@ -90,10 +98,10 @@ export default function AdminHomepage() {
     <div className="bg-white border border-[#DDDDDD] p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xs uppercase tracking-[0.2em]">Homepage Sections</h2>
-        <button onClick={openNew} className="btn btn-primary text-[10px]">Add Section</button>
+        {!showForm && <button onClick={openNew} className="btn btn-primary text-[10px]">Add Section</button>}
       </div>
 
-      {(editing !== null || editing === null && sections.some((s) => s.id === '')) ? null : editing === null && (
+      {!showForm && (
         <div className="space-y-2 mb-6">
           {sections.map((s, i) => (
             <div key={s.id} className="flex items-center gap-3 p-3 border border-[#DDDDDD]">
@@ -113,7 +121,7 @@ export default function AdminHomepage() {
         </div>
       )}
 
-      {(editing !== null || editing === '' && false) && (
+      {showForm && (
         <div className="mb-6 p-4 bg-[#F9F9F9] space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input placeholder="Section Title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-field text-xs" />
@@ -151,7 +159,7 @@ export default function AdminHomepage() {
 
           <div className="flex gap-2">
             <button onClick={handleSave} className="btn btn-primary text-[10px]">Save</button>
-            <button onClick={() => { setEditing(null); openNew(); }} className="text-[10px] underline opacity-60">Cancel</button>
+            <button onClick={cancelForm} className="text-[10px] underline opacity-60">Cancel</button>
           </div>
         </div>
       )}
