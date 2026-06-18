@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const admin = () => createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: Request) {
   try {
@@ -15,13 +10,13 @@ export async function POST(req: Request) {
     let query: any;
 
     if (action === 'select') {
-      query = admin().from(table).select(columns || '*', count ? { count: 'exact', head: !!count } : {});
+      query = supabaseAdmin.from(table).select(columns || '*', count ? { count: 'exact', head: !!count } : {});
       if (filters) applyFilters(query, filters);
       if (order) query = query.order(order.column, { ascending: order.ascending ?? true });
       if (limitCount) query = query.limit(limitCount);
       if (single) query = query.single();
       const result = await query;
-      if (result.error && result.error.message?.includes('does not exist') || result.error?.code === '42P01') {
+      if (result.error && (result.error.message?.includes('does not exist') || result.error?.code === '42P01')) {
         return NextResponse.json({ data: null, count: 0, error: 'table_not_found' }, { status: 200 });
       }
       if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
@@ -29,14 +24,14 @@ export async function POST(req: Request) {
     }
 
     if (action === 'insert') {
-      query = admin().from(table).insert(data || {}).select('*');
+      query = supabaseAdmin.from(table).insert(data || {}).select('*');
       const result = await query;
       if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
       return NextResponse.json({ data: result.data?.[0] || null });
     }
 
     if (action === 'update') {
-      query = admin().from(table).update(data || {});
+      query = supabaseAdmin.from(table).update(data || {});
       if (filters) applyFilters(query, filters);
       const result = await query;
       if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
@@ -44,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     if (action === 'delete') {
-      query = admin().from(table).delete();
+      query = supabaseAdmin.from(table).delete();
       if (filters) applyFilters(query, filters);
       const result = await query;
       if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });

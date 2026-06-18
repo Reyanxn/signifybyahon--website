@@ -1,12 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
     const { error } = await supabaseAdmin.from('visits').insert({
       page: body.page || '/',
       title: body.title || '',

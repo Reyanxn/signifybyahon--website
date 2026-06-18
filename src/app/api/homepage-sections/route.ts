@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 const DEFAULTS = [
   { title: 'New Arrivals', type: 'new-arrivals', display_order: 1, alignment: 'left', active: true, product_ids: [] },

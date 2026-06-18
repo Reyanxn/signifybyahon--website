@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 function toCamel(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
@@ -15,18 +15,13 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   if (id) {
-    const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
+    const { data, error } = await supabaseAdmin.from('products').select('*').eq('id', id).single();
     if (error) return NextResponse.json(null);
     return NextResponse.json(toCamel({ id: data.id, ...data }));
   }
 
-  const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false }).limit(10);
+  const { data } = await supabaseAdmin.from('products').select('*').order('created_at', { ascending: false }).limit(10);
   return NextResponse.json((data || []).map((d: any) => toCamel({ id: d.id, ...d })));
 }
 

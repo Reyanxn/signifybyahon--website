@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = () => createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET(req: Request) {
   try {
@@ -16,13 +11,13 @@ export async function GET(req: Request) {
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     const [vRes, oRes] = await Promise.all([
-      supabaseAdmin().from('visits').select('id, page, title, referrer, created_at').gte('created_at', dayStart).lte('created_at', dayEnd).order('created_at', { ascending: false }).limit(500),
-      supabaseAdmin().from('orders').select('id, total_amount, created_at').gte('created_at', dayStart).lte('created_at', dayEnd).order('created_at', { ascending: false }),
+      supabaseAdmin.from('visits').select('id, page, title, referrer, created_at').gte('created_at', dayStart).lte('created_at', dayEnd).order('created_at', { ascending: false }).limit(500),
+      supabaseAdmin.from('orders').select('id, total_amount, created_at').gte('created_at', dayStart).lte('created_at', dayEnd).order('created_at', { ascending: false }),
     ]);
 
     let activeCount = 0;
     if (isToday) {
-      const aRes = await supabaseAdmin().from('visits').select('id', { count: 'exact', head: true }).gte('created_at', fiveMinAgo);
+      const aRes = await supabaseAdmin.from('visits').select('id', { count: 'exact', head: true }).gte('created_at', fiveMinAgo);
       activeCount = (aRes as any).count || 0;
     }
 
