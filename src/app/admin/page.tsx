@@ -108,7 +108,7 @@ function AdminDashboard() {
       const revenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
       setStats({ revenue, orders: orders.length, customers: users.length, products: products.length });
       setRecentOrders(orders.slice(-5).reverse());
-    });
+    }).catch(() => {});
   }, []);
 
   const statCards = [
@@ -169,7 +169,7 @@ function AdminCustomers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getUsers().then((data) => { setUsers(data); setLoading(false); });
+    getUsers().then((data) => { setUsers(data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   return (

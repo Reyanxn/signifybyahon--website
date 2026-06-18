@@ -39,7 +39,7 @@ export default function ProductSection({ title, link, filterType, productIds, al
       });
     } else {
       const opts = filterMap[filterType || ''] || { limitCount: 8 };
-      getProducts(opts).then((data) => { setProducts(data); setLoading(false); });
+      getProducts(opts).then((data) => { setProducts(data); setLoading(false); }).catch(() => setLoading(false));
     }
   }, [filterType, productIds?.join(',')]);
 
