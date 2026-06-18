@@ -205,19 +205,11 @@ export async function getHomepageSections() {
     throw error;
   }
   if (!data || data.length === 0) {
-    const { error: seedErr } = await supabase.from('homepage_sections')
-      .insert([
-        { title: 'New Arrivals', type: 'new-arrivals', display_order: 1, alignment: 'left', active: true, product_ids: [] },
-        { title: 'Best Sellers', type: 'best-sellers', display_order: 2, alignment: 'left', active: true, product_ids: [] },
-        { title: 'Trending Now', type: 'trending', display_order: 3, alignment: 'left', active: true, product_ids: [] },
-        { title: 'Sale', type: 'sale', display_order: 4, alignment: 'left', active: true, product_ids: [] },
-        { title: 'Customer Reviews', type: 'testimonials', display_order: 5, alignment: 'center', active: true, product_ids: [] },
-      ]);
-    if (!seedErr) {
-      const { data: seeded } = await supabase.from('homepage_sections')
-        .select('*').eq('active', true).order('display_order', { ascending: true });
-      return (seeded || []).map((d) => toCamel({ id: d.id, ...d }));
-    }
+    try {
+      const res = await fetch('/api/seed-homepage', { method: 'POST' });
+      const json = await res.json();
+      if (json.sections) return json.sections.map((d: any) => toCamel({ id: d.id, ...d }));
+    } catch {}
   }
   return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
@@ -250,19 +242,14 @@ export async function deleteHomepageSection(id: string) {
   if (error) throw error;
 }
 
-const DEFAULT_HOMEPAGE_SECTIONS = [
-  { title: 'New Arrivals', type: 'new-arrivals', display_order: 1, alignment: 'left', active: true, product_ids: [] },
-  { title: 'Best Sellers', type: 'best-sellers', display_order: 2, alignment: 'left', active: true, product_ids: [] },
-  { title: 'Trending Now', type: 'trending', display_order: 3, alignment: 'left', active: true, product_ids: [] },
-  { title: 'Sale', type: 'sale', display_order: 4, alignment: 'left', active: true, product_ids: [] },
-  { title: 'Customer Reviews', type: 'testimonials', display_order: 5, alignment: 'center', active: true, product_ids: [] },
-];
-
 export async function resetHomepageSections() {
-  const { error: delErr } = await supabase.from('homepage_sections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  if (delErr && !delErr.message?.includes('does not exist')) throw delErr;
-  const { error: insErr } = await supabase.from('homepage_sections').insert(DEFAULT_HOMEPAGE_SECTIONS);
-  if (insErr) throw insErr;
+  try {
+    const res = await fetch('/api/seed-homepage', { method: 'POST' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to reset');
+  } catch (err) {
+    throw err;
+  }
 }
 
 export async function getFeaturedReviews() {
