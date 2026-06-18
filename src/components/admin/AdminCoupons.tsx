@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getCoupons } from '@/lib/supabaseServices';
+import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/utils/helpers';
 import type { Coupon } from '@/types';
 import toast from 'react-hot-toast';
@@ -24,9 +25,12 @@ export default function AdminCoupons() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'coupons', action: 'insert', data: { code: form.code.toUpperCase(), type: form.type, value: Number(form.value), min_order: Number(form.minOrder), max_uses: Number(form.maxUses), used_count: 0, active: true, start_date: new Date().toISOString(), end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() } }) });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const { error } = await supabase.from('coupons').insert({
+        code: form.code.toUpperCase(), type: form.type, value: Number(form.value),
+        min_order: Number(form.minOrder), max_uses: Number(form.maxUses), used_count: 0, active: true,
+        start_date: new Date().toISOString(), end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      if (error) throw error;
       toast.success('Coupon created!');
       setShowForm(false);
       setForm({ code: '', type: 'percentage', value: '', minOrder: '', maxUses: '' });

@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cartStore';
 import { formatPrice, generateOrderId } from '@/utils/helpers';
 import { SHIPPING, SHIPPING_RATES, PAYMENT_METHODS } from '@/utils/constants';
 import { addOrder, decrementProductStock } from '@/lib/supabaseServices';
+import { supabase } from '@/lib/supabase';
 import { trackEvent } from '@/components/layout/MetaPixel';
 import toast from 'react-hot-toast';
 
@@ -33,10 +34,8 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       for (const item of items) {
-        const sRes = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'products', action: 'select', filters: { id: item.productId }, single: true, columns: 'size_stock' }) });
-      const sJson = await sRes.json();
-      const prod = sJson.data;
-      const ss: any[] = prod?.size_stock || [];
+        const { data: prod } = await supabase.from('products').select('size_stock').eq('id', item.productId).single();
+        const ss: any[] = prod?.size_stock || [];
         const found = ss.find((s) => s.name === item.size);
         if (!found || found.stock < item.quantity) {
           toast.error(`"${item.name}" size ${item.size} is out of stock`);

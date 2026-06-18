@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiX, HiChevronLeft, HiChevronRight } from 'react-icons/hi';
+import { supabase } from '@/lib/supabase';
 
 export default function PopupModal() {
   const [popups, setPopups] = useState<any[]>([]);
@@ -10,9 +11,8 @@ export default function PopupModal() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    fetch('/api/popups?active=true').then(r => r.json()).then(json => {
-      const data = json.data || [];
-      if (data.length > 0) {
+    supabase.from('popups').select('*').eq('active', true).order('order', { ascending: true }).then(({ data }) => {
+      if (data && data.length > 0) {
         setPopups(data);
         const dismissed = sessionStorage.getItem('popup_dismissed');
         if (!dismissed) {

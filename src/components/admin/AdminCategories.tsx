@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCategories } from '@/lib/supabaseServices';
+import { supabase } from '@/lib/supabase';
 import { HiChevronUp, HiChevronDown } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
@@ -24,8 +24,8 @@ export default function AdminCategories() {
 
   const loadCategories = async () => {
     setLoading(true);
-    const data = await getCategories();
-    setCategories(data);
+    const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: true });
+    if (!error && data) setCategories(data);
     setLoading(false);
   };
 
@@ -47,14 +47,12 @@ export default function AdminCategories() {
     const maxOrder = categories.length > 0 ? Math.max(...categories.map((c) => c.order || 0)) : 0;
 
     if (editing) {
-      const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'categories', action: 'update', data: { name: form.name, slug, image: form.image }, filters: { id: editing } }) });
-      const json = await res.json();
-      if (!res.ok) { toast.error(json.error); return; }
+      const { error } = await supabase.from('categories').update({ name: form.name, slug, image: form.image }).eq('id', editing);
+      if (error) { toast.error(error.message); return; }
       toast.success('Category updated!');
     } else {
-      const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'categories', action: 'insert', data: { name: form.name, slug, image: form.image, order: maxOrder + 1 } }) });
-      const json = await res.json();
-      if (!res.ok) { toast.error(json.error); return; }
+      const { error } = await supabase.from('categories').insert({ name: form.name, slug, image: form.image, order: maxOrder + 1 });
+      if (error) { toast.error(error.message); return; }
       toast.success('Category created!');
     }
     setShowForm(false);
@@ -63,9 +61,8 @@ export default function AdminCategories() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this category?')) return;
-    const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'categories', action: 'delete', filters: { id } }) });
-    const json = await res.json();
-    if (!res.ok) { toast.error(json.error); return; }
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
     toast.success('Category deleted');
     loadCategories();
   };
@@ -78,10 +75,9 @@ export default function AdminCategories() {
     if (swapIdx < 0 || swapIdx >= items.length) return;
     const currentOrder = items[idx].order || idx;
     const swapOrder = items[swapIdx].order || swapIdx;
-    const r1 = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'categories', action: 'update', data: { order: swapOrder }, filters: { id } }) });
-    const r2 = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'categories', action: 'update', data: { order: currentOrder }, filters: { id: items[swapIdx].id } }) });
-    const j1 = await r1.json(); const j2 = await r2.json();
-    if (!r1.ok || !r2.ok) { toast.error('Failed to reorder'); return; }
+    const { error: e1 } = await supabase.from('categories').update({ order: swapOrder }).eq('id', id);
+    const { error: e2 } = await supabase.from('categories').update({ order: currentOrder }).eq('id', items[swapIdx].id);
+    if (e1 || e2) { toast.error('Failed to reorder'); return; }
     loadCategories();
   };
 

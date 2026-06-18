@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getOrders, updateOrderStatus } from '@/lib/supabaseServices';
 import { formatPrice, generateInvoiceHTML } from '@/utils/helpers';
+import { supabase } from '@/lib/supabase';
 import { HiArrowLeft, HiPrinter, HiTrash } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
@@ -34,9 +35,8 @@ export default function AdminOrders() {
 
   const loadOrders = async () => {
     setLoading(true);
-    const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'orders', action: 'select', order: { column: 'created_at', ascending: false } }) });
-    const json = await res.json();
-    if (!json.error && json.data) setOrders(json.data);
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (!error && data) setOrders(data);
     setLoading(false);
   };
 
@@ -48,18 +48,16 @@ export default function AdminOrders() {
   };
 
   const handlePaymentStatusUpdate = async (id: string, paymentStatus: string) => {
-    const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'orders', action: 'update', data: { payment_status: paymentStatus, updated_at: new Date().toISOString() }, filters: { id } }) });
-    const json = await res.json();
-    if (!res.ok) { toast.error(json.error); return; }
+    const { error } = await supabase.from('orders').update({ payment_status: paymentStatus, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
     toast.success(`Payment ${paymentStatus}`);
     loadOrders();
     if (selectedOrder?.id === id) setSelectedOrder({ ...selectedOrder, payment_status: paymentStatus });
   };
 
   const handleDeleteOrder = async (id: string) => {
-    const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'orders', action: 'delete', filters: { id } }) });
-    const json = await res.json();
-    if (!res.ok) { toast.error(json.error); return; }
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
     toast.success('Order deleted');
     setDeleteConfirm(null);
     setSelectedOrder(null);
