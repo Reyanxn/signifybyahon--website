@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection, HiStar, HiHome, HiDatabase, HiDownload,
+  HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection, HiStar, HiHome, HiDatabase,
 } from 'react-icons/hi';
 import { getOrders, getProducts, getUsers } from '@/lib/supabaseServices';
 import { formatPrice } from '@/utils/helpers';
@@ -43,7 +43,6 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'admin')) {
@@ -51,47 +50,28 @@ export default function AdminPage() {
     }
   }, [user, loading, router]);
 
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const doInstall = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    await installPrompt.userChoice;
-    setInstallPrompt(null);
-  };
-
   if (loading || !user || user.role !== 'admin') return null;
 
   return (
     <div className="pt-16 md:pt-20 min-h-screen bg-[#F9F9F9]">
-      <div className="container-site py-4 md:py-8">
-        <div className="flex items-center justify-between mb-4 md:mb-8">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden text-[10px] uppercase tracking-[0.1em] border border-[#DDDDDD] px-2 py-1">Menu</button>
-            <div>
-              <h1 className="text-sm md:text-xl tracking-[0.2em] font-normal">MESO Dev</h1>
-              <p className="text-[10px] uppercase tracking-[0.2em] opacity-40 mt-0.5">Manage your store</p>
-            </div>
+      <div className="container-site py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-lg md:text-xl tracking-[0.2em] font-normal">Admin Dashboard</h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] opacity-40 mt-1">Manage your store</p>
           </div>
-          <div className="flex items-center gap-2 md:gap-3">
-            {installPrompt && <button onClick={doInstall} className="flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] border border-[#DDDDDD] px-2 py-1"><HiDownload className="w-3 h-3" /> App</button>}
-            <button onClick={() => { logout(); router.push('/auth'); }} className="text-[10px] uppercase tracking-[0.1em] opacity-40 hover:opacity-100">Logout</button>
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full hidden md:block" />
-            <span className="text-[10px] uppercase tracking-[0.1em] opacity-40 hidden md:block">{user?.email}</span>
+          <div className="flex items-center gap-3">
+            <button onClick={() => { logout(); router.push('/auth'); }} className="text-[10px] uppercase tracking-[0.1em] opacity-40 hover:opacity-100 transition-opacity">Logout</button>
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+            <span className="text-[10px] uppercase tracking-[0.1em] opacity-40">{user?.email}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 md:gap-8">
-          <div className={`lg:col-span-1 ${sidebarOpen ? 'block' : 'hidden'} lg:block`}>
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
+          <div className="lg:col-span-1">
             <nav className="border border-[#DDDDDD] bg-white">
               {adminTabs.map((tab) => (
-                <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-[10px] uppercase tracking-[0.2em] border-b border-[#DDDDDD] transition-colors ${
                     activeTab === tab.id ? 'bg-[#1C1C1C] text-white' : 'hover:bg-[#F9F9F9]'
                   }`}
