@@ -65,7 +65,7 @@ export function getSizeStock(product: any): { name: string; stock: number; visib
     return product.sizeStock;
   }
   if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
-    return product.sizes.map((s: string) => ({ name: s, stock: 0, visible: true }));
+    return product.sizes.map((s: string) => ({ name: s, stock: product.stock ?? 0, visible: true }));
   }
   return [];
 }
