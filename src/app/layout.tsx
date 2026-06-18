@@ -7,6 +7,8 @@ import PopupModal from '@/components/layout/PopupModal';
 import VisitTracker from '@/components/layout/VisitTracker';
 import MetaPixel from '@/components/layout/MetaPixel';
 import ScrollToTop from '@/components/layout/ScrollToTop';
+import OrderNotifications from '@/components/layout/OrderNotifications';
+import PwaInstallPrompt from '@/components/layout/PwaInstallPrompt';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
@@ -39,6 +41,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ScrollToTop />
         <VisitTracker />
         <MetaPixel />
+        <OrderNotifications />
+        <PwaInstallPrompt />
         <Toaster
           position="top-right"
           toastOptions={{
