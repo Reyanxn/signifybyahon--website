@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getReelProducts } from '@/lib/supabaseServices';
 import toast from 'react-hot-toast';
 
 export default function AdminReels() {
@@ -18,16 +18,17 @@ export default function AdminReels() {
 
   const loadData = async () => {
     setLoading(true);
-    const { data: all } = await supabase.from('products').select('id, name, images, video').order('created_at', { ascending: false });
-    if (all) setAllProducts(all);
-    setProducts((all || []).filter((p: any) => p.video));
+    const all = await getReelProducts();
+    setAllProducts(all);
+    setProducts(all.filter((p: any) => p.video));
     setLoading(false);
   };
 
   const handleAdd = async () => {
     if (!selectedProduct || !videoUrl) { toast.error('Select product and enter video URL'); return; }
-    const { error } = await supabase.from('products').update({ video: videoUrl, updated_at: new Date().toISOString() }).eq('id', selectedProduct);
-    if (error) { toast.error(error.message); return; }
+    const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'products', action: 'update', data: { video: videoUrl, updated_at: new Date().toISOString() }, filters: { id: selectedProduct } }) });
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error); return; }
     toast.success('Reel added!');
     setShowAdd(false);
     setSelectedProduct('');
@@ -37,8 +38,9 @@ export default function AdminReels() {
 
   const handleRemove = async (id: string) => {
     if (!confirm('Remove video from this product?')) return;
-    const { error } = await supabase.from('products').update({ video: null, updated_at: new Date().toISOString() }).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'products', action: 'update', data: { video: null, updated_at: new Date().toISOString() }, filters: { id } }) });
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error); return; }
     toast.success('Reel removed');
     loadData();
   };

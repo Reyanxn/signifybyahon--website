@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { getBanners, deleteBanner, uploadFile } from '@/lib/supabaseServices';
-import { supabase } from '@/lib/supabase';
 import type { Banner } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -47,12 +46,14 @@ export default function AdminBanners() {
       if (imageUrl) data.image = imageUrl;
 
       if (editing) {
-        const { error } = await supabase.from('banners').update(data).eq('id', editing);
-        if (error) throw error;
+        const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'banners', action: 'update', data, filters: { id: editing } }) });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
         toast.success('Banner updated!');
       } else {
-        const { error } = await supabase.from('banners').insert(data);
-        if (error) throw error;
+        const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'banners', action: 'insert', data }) });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
         toast.success('Banner created!');
       }
       setShowForm(false);

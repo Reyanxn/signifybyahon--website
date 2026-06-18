@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { getBlogPosts } from '@/lib/supabaseServices';
 
 export default function BlogPreview() {
   const [posts, setPosts] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from('blogs').select('*').eq('published', true).order('created_at', { ascending: false }).limit(3).then(({ data }) => {
-      if (data) setPosts(data);
+    getBlogPosts().then((data) => {
+      setPosts(data.slice(0, 3));
     });
   }, []);
 

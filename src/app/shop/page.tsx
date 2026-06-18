@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import { HiAdjustments, HiX } from 'react-icons/hi';
 import ProductCard from '@/components/product/ProductCard';
 import { SORT_OPTIONS } from '@/utils/constants';
-import { getProducts } from '@/lib/supabaseServices';
-import { supabase } from '@/lib/supabase';
+import { getProducts, getCategories as getDbCats } from '@/lib/supabaseServices';
 import type { Product } from '@/types';
 
 const filterTypes = [
@@ -36,7 +35,7 @@ export default function ShopPage() {
       setProducts(prods);
       setLoading(false);
     });
-    supabase.from('categories').select('slug, name').order('created_at', { ascending: true }).then(({ data }) => {
+    getDbCats().then((data) => {
       if (data) setDbCategories(data);
     });
   }, []);

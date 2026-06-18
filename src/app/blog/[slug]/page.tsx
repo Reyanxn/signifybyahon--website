@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { getBlogPost } from '@/lib/supabaseServices';
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -12,7 +12,7 @@ export default function BlogPostPage() {
 
   useEffect(() => {
     if (params.slug) {
-      supabase.from('blogs').select('*').eq('slug', params.slug).single().then(({ data, error }) => {
+      getBlogPost(params.slug as string).then((data) => {
         if (data) setPost(data);
         setLoading(false);
       });

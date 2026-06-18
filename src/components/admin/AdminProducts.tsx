@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getProducts, addProduct, updateProduct, deleteProduct, uploadProductImage } from '@/lib/supabaseServices';
-import { supabase } from '@/lib/supabase';
+import { getProducts, addProduct, updateProduct, deleteProduct, uploadProductImage, getCategories } from '@/lib/supabaseServices';
 import { formatPrice, getSizeStock } from '@/utils/helpers';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [categories, setCategories] = useState<{ id?: string; name: string; slug: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -26,7 +25,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     loadProducts();
-    supabase.from('categories').select('id, name, slug').then(({ data }) => {
+    getCategories().then((data) => {
       if (data) setCategories(data);
     });
   }, []);
@@ -104,17 +103,7 @@ export default function AdminProducts() {
         await updateProduct(editing, { ...productData, video: form.video || null });
         toast.success('Product updated!');
       } else {
-        await supabase.from('products').insert({
-          name: productData.name, slug: productData.slug,
-          description: productData.description, fabric_details: productData.fabricDetails,
-          price: productData.price, sale_price: productData.salePrice || null,
-          category_id: productData.categoryId, collection_id: productData.collectionId,
-          images: productData.images, sizes: productData.sizes, colors: productData.colors,
-          stock: productData.stock, video: form.video || null, size_chart: sizeChart || null,
-          size_stock: sizeStockList,
-          featured: productData.featured, best_seller: productData.bestSeller,
-          trending: productData.trending, tags: productData.tags,
-        });
+        await addProduct(productData);
         toast.success('Product created!');
       }
       setShowForm(false);

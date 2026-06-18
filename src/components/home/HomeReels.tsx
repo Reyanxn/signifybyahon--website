@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getReelProducts } from '@/lib/supabaseServices';
 
 export default function HomeReels() {
   const [reels, setReels] = useState<any[]>([]);
@@ -9,8 +9,8 @@ export default function HomeReels() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    supabase.from('products').select('id, name, video, images').not('video', 'is', null).limit(10).then(({ data }) => {
-      if (data) setReels(data);
+    getReelProducts().then((data) => {
+      setReels(data);
       setLoading(false);
     });
   }, []);

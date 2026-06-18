@@ -108,7 +108,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     Promise.all([getOrders(), getProducts(), getUsers()]).then(([orders, products, users]) => {
-      const revenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      const revenue = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
       setStats({ revenue, orders: orders.length, customers: users.length, products: products.length });
       setRecentOrders(orders.slice(-5).reverse());
     });

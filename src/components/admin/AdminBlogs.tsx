@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { getBlogPosts, deleteBlogPost, uploadFile } from '@/lib/supabaseServices';
-import { supabase } from '@/lib/supabase';
 import type { BlogPost } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -20,8 +19,8 @@ export default function AdminBlogs() {
 
   const loadPosts = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
-    if (!error && data) setPosts(data as any);
+    const data = await getBlogPosts();
+    setPosts(data as any);
     setLoading(false);
   };
 
@@ -51,19 +50,14 @@ export default function AdminBlogs() {
       const slug = form.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
       if (editing) {
-        const { error } = await supabase.from('blogs').update({
-          title: form.title, slug, content: form.content, excerpt: form.excerpt,
-          tags: form.tags.split(',').map((t) => t.trim()), image: imageUrl,
-        }).eq('id', editing);
-        if (error) throw error;
+        const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'blogs', action: 'update', data: { title: form.title, slug, content: form.content, excerpt: form.excerpt, tags: form.tags.split(',').map((t) => t.trim()), image: imageUrl }, filters: { id: editing } }) });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
         toast.success('Blog updated!');
       } else {
-        const { error } = await supabase.from('blogs').insert({
-          title: form.title, slug, content: form.content, excerpt: form.excerpt,
-          tags: form.tags.split(',').map((t) => t.trim()), image: imageUrl,
-          author: 'Admin', published: true,
-        });
-        if (error) throw error;
+        const res = await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ table: 'blogs', action: 'insert', data: { title: form.title, slug, content: form.content, excerpt: form.excerpt, tags: form.tags.split(',').map((t) => t.trim()), image: imageUrl, author: 'Admin', published: true } }) });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
         toast.success('Blog post created!');
       }
       setShowForm(false);
