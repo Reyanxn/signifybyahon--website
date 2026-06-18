@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { supabase } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
 const DEFAULTS = [
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const all = url.searchParams.get('all') === 'true';
 
-  let query = supabaseAdmin.from('homepage_sections').select('*');
+  let query = supabase.from('homepage_sections').select('*');
   if (!all) query = query.eq('active', true);
   query = query.order('display_order', { ascending: true });
 
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   }
 
   if (!data || data.length === 0) {
-    const { data: seeded, error: seedErr } = await supabaseAdmin.from('homepage_sections').insert(DEFAULTS).select();
+    const { data: seeded, error: seedErr } = await supabase.from('homepage_sections').insert(DEFAULTS).select();
     if (seedErr) return NextResponse.json({ error: seedErr.message }, { status: 500 });
     return NextResponse.json({ sections: seeded || [] });
   }
@@ -39,14 +39,14 @@ export async function POST(req: Request) {
   const action = url.searchParams.get('action');
 
   if (action === 'reset') {
-    await supabaseAdmin.from('homepage_sections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    const { data, error } = await supabaseAdmin.from('homepage_sections').insert(DEFAULTS).select();
+    await supabase.from('homepage_sections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const { data, error } = await supabase.from('homepage_sections').insert(DEFAULTS).select();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ sections: data || [] });
   }
 
   const body = await req.json();
-  const { data, error } = await supabaseAdmin.from('homepage_sections').insert(body).select().single();
+  const { data, error } = await supabase.from('homepage_sections').insert(body).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ section: data });
 }
@@ -57,7 +57,7 @@ export async function PUT(req: Request) {
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
   const body = await req.json();
-  const { data, error } = await supabaseAdmin.from('homepage_sections').update({ ...body, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  const { data, error } = await supabase.from('homepage_sections').update({ ...body, updated_at: new Date().toISOString() }).eq('id', id).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ section: data });
 }
@@ -67,7 +67,7 @@ export async function DELETE(req: NextRequest) {
   const id = url.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-  const { error } = await supabaseAdmin.from('homepage_sections').delete().eq('id', id);
+  const { error } = await supabase.from('homepage_sections').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
