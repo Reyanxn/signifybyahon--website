@@ -65,8 +65,7 @@ export function getSizeStock(product: any): { name: string; stock: number; visib
     return product.sizeStock;
   }
   if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
-    const perSize = product.stock ? Math.floor(product.stock / product.sizes.length) : 0;
-    return product.sizes.map((s: string) => ({ name: s, stock: perSize, visible: true }));
+    return product.sizes.map((s: string) => ({ name: s, stock: 0, visible: true }));
   }
   return [];
 }
@@ -74,17 +73,25 @@ export function getSizeStock(product: any): { name: string; stock: number; visib
 export function getSizeStockByName(product: any, sizeName: string): number {
   const list = getSizeStock(product);
   const found = list.find((s) => s.name === sizeName);
-  return found?.stock ?? 0;
+  if (found !== undefined) return found.stock;
+  return product.stock ?? 0;
 }
 
 export function getTotalStock(product: any): number {
-  const list = getSizeStock(product);
-  return list.reduce((sum, s) => sum + s.stock, 0);
+  if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
+    return product.sizeStock.reduce((sum: number, s: any) => sum + s.stock, 0);
+  }
+  return product.stock ?? 0;
 }
 
 export function getVisibleSizes(product: any): { name: string; stock: number }[] {
-  const list = getSizeStock(product);
-  return list.filter((s) => s.visible).map(({ name, stock }) => ({ name, stock }));
+  if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
+    return product.sizeStock.filter((s: any) => s.visible).map(({ name, stock }: any) => ({ name, stock }));
+  }
+  if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
+    return product.sizes.map((s: string) => ({ name: s, stock: product.stock ?? 0 }));
+  }
+  return [{ name: 'One Size', stock: product.stock ?? 0 }];
 }
 
 function g<T>(obj: any, ...keys: string[]): T | undefined {
