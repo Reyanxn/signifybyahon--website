@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 function getReferrerSource(): string {
+  if (typeof document === 'undefined') return 'Direct';
   const ref = document.referrer;
   if (!ref) return 'Direct';
   if (ref.includes('facebook.com') || ref.includes('fb.com') || ref.includes('fb.me')) return 'Facebook';
@@ -15,7 +16,15 @@ function getReferrerSource(): string {
   if (ref.includes('youtube.com')) return 'YouTube';
   if (ref.includes('twitter.com') || ref.includes('x.com')) return 'Twitter / X';
   if (ref.includes('t.me') || ref.includes('telegram')) return 'Telegram';
+  if (ref.includes('tiktok.com')) return 'TikTok';
+  if (ref.includes('linkedin.com')) return 'LinkedIn';
+  if (ref.includes('pinterest.com')) return 'Pinterest';
   try { return new URL(ref).hostname.replace('www.', ''); } catch { return 'Other'; }
+}
+
+function getPageTitle(): string {
+  if (typeof document === 'undefined') return '';
+  return document.title || '';
 }
 
 export default function VisitTracker() {
@@ -26,17 +35,18 @@ export default function VisitTracker() {
     if (pathname === lastPath.current) return;
     lastPath.current = pathname;
 
-    const track = async () => {
+    const id = setTimeout(async () => {
       try {
         await supabase.from('visits').insert({
           page: pathname,
+          title: getPageTitle(),
           referrer: getReferrerSource(),
           created_at: new Date().toISOString(),
         });
       } catch {}
-    };
+    }, 800);
 
-    setTimeout(track, 500);
+    return () => clearTimeout(id);
   }, [pathname]);
 
   return null;
