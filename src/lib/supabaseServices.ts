@@ -198,58 +198,54 @@ export async function deleteReview(id: string) {
 
 // ─── HOMEPAGE SECTIONS ────────────────────────────
 export async function getHomepageSections() {
-  const { data, error } = await supabase.from('homepage_sections')
-    .select('*').eq('active', true).order('display_order', { ascending: true });
-  if (error) {
-    if (error.message?.includes('does not exist') || error.code === '42P01') return [];
-    throw error;
-  }
-  if (!data || data.length === 0) {
-    try {
-      const res = await fetch('/api/seed-homepage', { method: 'POST' });
-      const json = await res.json();
-      if (json.sections) return json.sections.map((d: any) => toCamel({ id: d.id, ...d }));
-    } catch {}
-  }
-  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
+  try {
+    const res = await fetch('/api/homepage-sections');
+    const json = await res.json();
+    if (json.sections) return json.sections.map((d: any) => toCamel({ id: d.id, ...d }));
+    return [];
+  } catch { return []; }
 }
 
 export async function getAllHomepageSections() {
-  const { data, error } = await supabase.from('homepage_sections')
-    .select('*').order('display_order', { ascending: true });
-  if (error) {
-    if (error.message?.includes('does not exist') || error.code === '42P01') return [];
-    throw error;
-  }
-  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
+  try {
+    const res = await fetch('/api/homepage-sections?all=true');
+    const json = await res.json();
+    if (json.sections) return json.sections.map((d: any) => toCamel({ id: d.id, ...d }));
+    return [];
+  } catch { return []; }
 }
 
 export async function addHomepageSection(data: any) {
-  const { data: result, error } = await supabase.from('homepage_sections')
-    .insert(toSnake(data)).select().single();
-  if (error) throw error;
-  return toCamel({ id: result.id, ...result });
+  const res = await fetch('/api/homepage-sections', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(toSnake(data)),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to create');
+  return toCamel({ id: json.section.id, ...json.section });
 }
 
 export async function updateHomepageSection(id: string, data: any) {
-  const { error } = await supabase.from('homepage_sections')
-    .update({ ...toSnake(data), updated_at: new Date().toISOString() }).eq('id', id);
-  if (error) throw error;
+  const res = await fetch(`/api/homepage-sections?id=${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(toSnake(data)),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to update');
 }
 
 export async function deleteHomepageSection(id: string) {
-  const { error } = await supabase.from('homepage_sections').delete().eq('id', id);
-  if (error) throw error;
+  const res = await fetch(`/api/homepage-sections?id=${id}`, { method: 'DELETE' });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to delete');
 }
 
 export async function resetHomepageSections() {
-  try {
-    const res = await fetch('/api/seed-homepage', { method: 'POST' });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to reset');
-  } catch (err) {
-    throw err;
-  }
+  const res = await fetch('/api/homepage-sections?action=reset', { method: 'POST' });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to reset');
 }
 
 export async function getFeaturedReviews() {
