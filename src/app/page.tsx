@@ -11,11 +11,21 @@ import Newsletter from '@/components/home/Newsletter';
 import { getHomepageSections } from '@/lib/supabaseServices';
 import type { HomepageSection as HomepageSectionType } from '@/types';
 
+const DEFAULT_SECTIONS: HomepageSectionType[] = [
+  { id: 'default-new-arrivals', title: 'New Arrivals', type: 'new-arrivals', displayOrder: 1, alignment: 'left', active: true, productIds: [] },
+  { id: 'default-best-sellers', title: 'Best Sellers', type: 'best-sellers', displayOrder: 2, alignment: 'left', active: true, productIds: [] },
+  { id: 'default-trending', title: 'Trending Now', type: 'trending', displayOrder: 3, alignment: 'left', active: true, productIds: [] },
+  { id: 'default-sale', title: 'Sale', type: 'sale', displayOrder: 4, alignment: 'left', active: true, productIds: [] },
+  { id: 'default-testimonials', title: 'Customer Reviews', type: 'testimonials', displayOrder: 5, alignment: 'center', active: true, productIds: [] },
+];
+
 export default function HomePage() {
-  const [sections, setSections] = useState<HomepageSectionType[]>([]);
+  const [sections, setSections] = useState<HomepageSectionType[]>(DEFAULT_SECTIONS);
 
   useEffect(() => {
-    getHomepageSections().then(setSections).catch(() => {});
+    getHomepageSections()
+      .then((data) => { if (data.length > 0) setSections(data); })
+      .catch(() => {});
   }, []);
 
   const renderSection = (s: HomepageSectionType) => {

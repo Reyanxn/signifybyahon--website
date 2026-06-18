@@ -200,14 +200,20 @@ export async function deleteReview(id: string) {
 export async function getHomepageSections() {
   const { data, error } = await supabase.from('homepage_sections')
     .select('*').eq('active', true).order('display_order', { ascending: true });
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes('does not exist') || error.code === '42P01') return [];
+    throw error;
+  }
   return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
 
 export async function getAllHomepageSections() {
   const { data, error } = await supabase.from('homepage_sections')
     .select('*').order('display_order', { ascending: true });
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes('does not exist') || error.code === '42P01') return [];
+    throw error;
+  }
   return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
 
