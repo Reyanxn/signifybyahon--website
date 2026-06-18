@@ -196,3 +196,24 @@ export async function getUsers() {
   if (error) throw error;
   return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
+
+// ─── STOCK ──────────────────────────────────────────────
+export async function decrementProductStock(productId: string, sizeName: string, quantity: number) {
+  const { data: product, error: fetchError } = await supabase.from('products').select('size_stock, stock').eq('id', productId).single();
+  if (fetchError || !product) throw new Error('Product not found');
+
+  const sizeStock: { name: string; stock: number; visible: boolean }[] = product.size_stock || [];
+  const idx = sizeStock.findIndex((s) => s.name === sizeName);
+  if (idx === -1) throw new Error(`Size '${sizeName}' not found for this product`);
+
+  sizeStock[idx] = { ...sizeStock[idx], stock: Math.max(0, sizeStock[idx].stock - quantity) };
+  const newTotal = sizeStock.reduce((sum, s) => sum + s.stock, 0);
+
+  const { error: updateError } = await supabase.from('products').update({
+    size_stock: sizeStock,
+    stock: newTotal,
+    updated_at: new Date().toISOString(),
+  }).eq('id', productId);
+
+  if (updateError) throw updateError;
+}

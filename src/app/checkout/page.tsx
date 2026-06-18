@@ -6,7 +6,8 @@ import Button from '@/components/ui/Button';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice, generateOrderId } from '@/utils/helpers';
 import { SHIPPING, SHIPPING_RATES, PAYMENT_METHODS } from '@/utils/constants';
-import { addOrder } from '@/lib/supabaseServices';
+import { addOrder, decrementProductStock } from '@/lib/supabaseServices';
+import { supabase } from '@/lib/supabase';
 import { trackEvent } from '@/components/layout/MetaPixel';
 import toast from 'react-hot-toast';
 
@@ -32,6 +33,16 @@ export default function CheckoutPage() {
     if (!form.name || !form.phone || !form.address || !form.city) { toast.error('Fill required fields'); return; }
     setLoading(true);
     try {
+      for (const item of items) {
+        const { data: prod } = await supabase.from('products').select('size_stock').eq('id', item.productId).single();
+        const ss: any[] = prod?.size_stock || [];
+        const found = ss.find((s) => s.name === item.size);
+        if (!found || found.stock < item.quantity) {
+          toast.error(`"${item.name}" size ${item.size} is out of stock`);
+          setLoading(false);
+          return;
+        }
+      }
       const orderId = generateOrderId();
       await addOrder({
         id: orderId,
@@ -49,6 +60,7 @@ export default function CheckoutPage() {
         updatedAt: Date.now(),
       });
       trackEvent('Purchase', { value: total, currency: 'BDT', content_ids: items.map((i) => i.productId), content_type: 'product' });
+      await Promise.all(items.map((item) => decrementProductStock(item.productId, item.size, item.quantity)));
       clearCart();
       toast.success('Order placed successfully!');
       router.push(`/order/${orderId}`);
