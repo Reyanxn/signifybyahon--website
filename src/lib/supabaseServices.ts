@@ -22,6 +22,14 @@ function toCamel(obj: any): any {
   return out;
 }
 
+function getTotalStockRaw(product: any): number {
+  if (product.size_stock && Array.isArray(product.size_stock) && product.size_stock.length > 0) {
+    const s = product.size_stock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
+    if (s > 0) return s;
+  }
+  return product.stock ?? 0;
+}
+
 // ─── PRODUCTS ───────────────────────────────────────────
 export async function getProducts(opts?: { category?: string; sort?: string; limitCount?: number; featured?: boolean; bestSeller?: boolean; trending?: boolean; onSale?: boolean }) {
   let query = supabase.from('products').select('*');
@@ -30,13 +38,19 @@ export async function getProducts(opts?: { category?: string; sort?: string; lim
   if (opts?.bestSeller) query = query.eq('best_seller', true);
   if (opts?.trending) query = query.eq('trending', true);
   if (opts?.onSale) query = query.not('sale_price', 'is', null);
-  if (opts?.sort === 'price-low') query = query.order('price', { ascending: true });
-  else if (opts?.sort === 'price-high') query = query.order('price', { ascending: false });
-  else query = query.order('created_at', { ascending: false });
-  if (opts?.limitCount) query = query.limit(opts.limitCount);
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
+  let result = (data || []).map((d) => toCamel({ id: d.id, ...d }));
+  if (opts?.sort === 'price-low') result.sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price));
+  else if (opts?.sort === 'price-high') result.sort((a, b) => (b.salePrice || b.price) - (a.salePrice || a.price));
+  else result.sort((a, b) => {
+    const aOut = getTotalStockRaw({ ...a, size_stock: a.sizeStock }) === 0;
+    const bOut = getTotalStockRaw({ ...b, size_stock: b.sizeStock }) === 0;
+    if (aOut !== bOut) return aOut ? 1 : -1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  if (opts?.limitCount) result = result.slice(0, opts.limitCount);
+  return result;
 }
 
 export async function getProduct(id: string) {
