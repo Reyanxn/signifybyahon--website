@@ -14,7 +14,7 @@ export default function CartPage() {
   const subtotal = getSubtotal();
   const [estimatedZone, setEstimatedZone] = useState('inside-dhaka');
   const zoneRate = SHIPPING_RATES.find((r) => r.id === estimatedZone);
-  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 60);
+  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 70);
   const discount = couponApplied ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal + shipping - discount;
 

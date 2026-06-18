@@ -13,13 +13,13 @@ export const COLORS = {
 };
 
 export const SHIPPING_RATES = [
-  { id: 'inside-dhaka', label: 'Inside Dhaka', price: 60 },
+  { id: 'inside-dhaka', label: 'Inside Dhaka', price: 70 },
   { id: 'dhaka-sub-area', label: 'Dhaka Sub-area', price: 100 },
   { id: 'outside-dhaka', label: 'Outside Dhaka', price: 120 },
 ] as const;
 
 export const SHIPPING = {
-  insideDhaka: 60,
+  insideDhaka: 70,
   dhakaSubArea: 100,
   outsideDhaka: 120,
   freeDeliveryThreshold: 2000,

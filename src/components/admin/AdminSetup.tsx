@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { HiCheckCircle, HiXCircle, HiPlay, HiDatabase, HiRefresh } from 'react-icons/hi';
+import { HiCheckCircle, HiXCircle, HiPlay, HiDatabase, HiRefresh, HiCode, HiClipboardCopy } from 'react-icons/hi';
 
 const migrations = [
   {
@@ -11,9 +11,6 @@ const migrations = [
     sql: `CREATE TABLE IF NOT EXISTS public.visits (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   ip TEXT,
-  city TEXT,
-  region TEXT,
-  country TEXT,
   page TEXT,
   referrer TEXT,
   title TEXT,
@@ -108,9 +105,15 @@ ALTER TABLE public.homepage_sections DISABLE ROW LEVEL SECURITY;`,
   },
 ];
 
+function getCombinedSql(): string {
+  return migrations.map((m) => `-- === ${m.label} ===\n${m.sql}`).join('\n\n');
+}
+
 export default function AdminSetup() {
   const [results, setResults] = useState<Record<string, { loading?: boolean; success?: boolean; error?: string; details?: string }>>({});
   const [runningAll, setRunningAll] = useState(false);
+  const [showSql, setShowSql] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const runSql = async (id: string, sql: string) => {
     setResults((r) => ({ ...r, [id]: { loading: true } }));
@@ -139,6 +142,12 @@ export default function AdminSetup() {
     setRunningAll(false);
   };
 
+  const copySql = async () => {
+    await navigator.clipboard.writeText(getCombinedSql());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const numDone = Object.values(results).filter((r) => r.success).length;
   const numFailed = Object.values(results).filter((r) => r && !r.loading && !r.success).length;
   const total = migrations.length;
@@ -152,12 +161,24 @@ export default function AdminSetup() {
             {numDone}/{total} completed {numFailed > 0 ? `(${numFailed} failed)` : ''}
           </p>
         </div>
-        <button onClick={runAll} disabled={runningAll}
-          className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] bg-[#1C1C1C] text-white px-4 py-2 disabled:opacity-40"
-        >
-          <HiPlay className="w-3 h-3" /> {runningAll ? 'Running...' : 'Run All'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowSql(!showSql)}
+            className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] border border-[#DDDDDD] px-3 py-2"
+          ><HiCode className="w-3 h-3" /> {showSql ? 'Hide SQL' : 'Show SQL'}</button>
+          <button onClick={copySql}
+            className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] border border-[#DDDDDD] px-3 py-2"
+          ><HiClipboardCopy className="w-3 h-3" /> {copied ? 'Copied!' : 'Copy All SQL'}</button>
+          <button onClick={runAll} disabled={runningAll}
+            className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] bg-[#1C1C1C] text-white px-4 py-2 disabled:opacity-40"
+          ><HiPlay className="w-3 h-3" /> {runningAll ? 'Running...' : 'Run All'}</button>
+        </div>
       </div>
+
+      {showSql && (
+        <div className="bg-[#1C1C1C] text-green-300 p-4 max-h-96 overflow-auto">
+          <pre className="text-[11px] leading-relaxed whitespace-pre-wrap font-mono">{getCombinedSql()}</pre>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-2">
         {migrations.map((m) => {
@@ -172,7 +193,7 @@ export default function AdminSetup() {
                   {r && !r.loading && !r.success && <HiXCircle className="w-3 h-3 text-red-500" />}
                 </div>
                 <p className="text-[10px] opacity-40 mt-1">{m.description}</p>
-                {r?.error && <p className="text-[10px] text-red-500 mt-1 font-mono break-all">{r.error}</p>}
+                {r?.error && <p className="text-[10px] text-red-500 mt-1 font-mono whitespace-pre-wrap break-all">{r.error}</p>}
                 {r?.details && <p className="text-[10px] text-green-700 mt-1">{r.details}</p>}
               </div>
               <button onClick={() => runSql(m.id, m.sql)} disabled={r?.loading}

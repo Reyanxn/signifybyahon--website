@@ -23,7 +23,7 @@ export default function CheckoutPage() {
   const update = (f: string, v: string) => setForm((p) => ({ ...p, [f]: v }));
   const subtotal = getSubtotal();
   const zoneRate = SHIPPING_RATES.find((r) => r.id === shippingZone);
-  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 60);
+  const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 70);
   const total = subtotal + shipping;
 
   if (items.length === 0) { router.push('/cart'); return null; }
