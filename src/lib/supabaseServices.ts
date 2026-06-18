@@ -235,6 +235,21 @@ export async function deleteHomepageSection(id: string) {
   if (error) throw error;
 }
 
+const DEFAULT_HOMEPAGE_SECTIONS = [
+  { title: 'New Arrivals', type: 'new-arrivals', display_order: 1, alignment: 'left', active: true, product_ids: [] },
+  { title: 'Best Sellers', type: 'best-sellers', display_order: 2, alignment: 'left', active: true, product_ids: [] },
+  { title: 'Trending Now', type: 'trending', display_order: 3, alignment: 'left', active: true, product_ids: [] },
+  { title: 'Sale', type: 'sale', display_order: 4, alignment: 'left', active: true, product_ids: [] },
+  { title: 'Customer Reviews', type: 'testimonials', display_order: 5, alignment: 'center', active: true, product_ids: [] },
+];
+
+export async function resetHomepageSections() {
+  const { error: delErr } = await supabase.from('homepage_sections').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (delErr && !delErr.message?.includes('does not exist')) throw delErr;
+  const { error: insErr } = await supabase.from('homepage_sections').insert(DEFAULT_HOMEPAGE_SECTIONS);
+  if (insErr) throw insErr;
+}
+
 export async function getFeaturedReviews() {
   const { data, error } = await supabase.from('reviews')
     .select('*, products(name)').eq('featured', true).eq('approved', true)

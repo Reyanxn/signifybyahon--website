@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   getAllHomepageSections, addHomepageSection,
-  updateHomepageSection, deleteHomepageSection, getProducts
+  updateHomepageSection, deleteHomepageSection, getProducts, resetHomepageSections
 } from '@/lib/supabaseServices';
 import type { HomepageSection } from '@/types';
 import toast from 'react-hot-toast';
@@ -23,8 +23,10 @@ export default function AdminHomepage() {
 
   const load = async () => {
     setLoading(true);
-    const data = await getAllHomepageSections();
-    setSections(data);
+    try {
+      const data = await getAllHomepageSections();
+      setSections(data);
+    } catch { setSections([]); }
     setLoading(false);
   };
 
@@ -58,15 +60,30 @@ export default function AdminHomepage() {
       cancelForm();
       load();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to save');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this section?')) return;
-    await deleteHomepageSection(id);
-    toast.success('Section deleted');
-    load();
+    try {
+      await deleteHomepageSection(id);
+      toast.success('Section deleted');
+      load();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete');
+    }
+  };
+
+  const handleReset = async () => {
+    if (!confirm('This will delete all current sections and restore defaults. Continue?')) return;
+    try {
+      await resetHomepageSections();
+      toast.success('Default sections restored');
+      load();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reset');
+    }
   };
 
   const moveUp = async (idx: number) => {
@@ -98,10 +115,20 @@ export default function AdminHomepage() {
     <div className="bg-white border border-[#DDDDDD] p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xs uppercase tracking-[0.2em]">Homepage Sections</h2>
-        {!showForm && <button onClick={openNew} className="btn btn-primary text-[10px]">Add Section</button>}
+        <div className="flex items-center gap-2">
+          <button onClick={handleReset} className="text-[10px] uppercase tracking-[0.1em] border border-[#DDDDDD] px-3 py-1.5">Reset Defaults</button>
+          {!showForm && <button onClick={openNew} className="btn btn-primary text-[10px]">Add Section</button>}
+        </div>
       </div>
 
-      {!showForm && (
+      {loading ? (
+        <p className="text-xs opacity-40 text-center py-8">Loading...</p>
+      ) : !showForm && sections.length === 0 ? (
+        <div className="text-center py-12 border border-dashed border-[#DDDDDD]">
+          <p className="text-xs opacity-40 mb-4">No homepage sections yet</p>
+          <button onClick={handleReset} className="text-[10px] uppercase tracking-[0.1em] bg-[#1C1C1C] text-white px-4 py-2">Restore Defaults</button>
+        </div>
+      ) : !showForm ? (
         <div className="space-y-2 mb-6">
           {sections.map((s, i) => (
             <div key={s.id} className="flex items-center gap-3 p-3 border border-[#DDDDDD]">
@@ -119,7 +146,7 @@ export default function AdminHomepage() {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       {showForm && (
         <div className="mb-6 p-4 bg-[#F9F9F9] space-y-3">
