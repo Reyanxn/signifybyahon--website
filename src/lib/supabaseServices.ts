@@ -204,6 +204,21 @@ export async function getHomepageSections() {
     if (error.message?.includes('does not exist') || error.code === '42P01') return [];
     throw error;
   }
+  if (!data || data.length === 0) {
+    const { error: seedErr } = await supabase.from('homepage_sections')
+      .insert([
+        { title: 'New Arrivals', type: 'new-arrivals', display_order: 1, alignment: 'left', active: true, product_ids: [] },
+        { title: 'Best Sellers', type: 'best-sellers', display_order: 2, alignment: 'left', active: true, product_ids: [] },
+        { title: 'Trending Now', type: 'trending', display_order: 3, alignment: 'left', active: true, product_ids: [] },
+        { title: 'Sale', type: 'sale', display_order: 4, alignment: 'left', active: true, product_ids: [] },
+        { title: 'Customer Reviews', type: 'testimonials', display_order: 5, alignment: 'center', active: true, product_ids: [] },
+      ]);
+    if (!seedErr) {
+      const { data: seeded } = await supabase.from('homepage_sections')
+        .select('*').eq('active', true).order('display_order', { ascending: true });
+      return (seeded || []).map((d) => toCamel({ id: d.id, ...d }));
+    }
+  }
   return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
 
