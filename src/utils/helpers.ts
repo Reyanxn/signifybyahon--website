@@ -62,31 +62,37 @@ export function getOrderStatusColor(status: string): string {
 
 export function getSizeStock(product: any): { name: string; stock: number; visible: boolean }[] {
   if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
-    return product.sizeStock;
+    const hasStock = product.sizeStock.some((s: any) => (s.stock || 0) > 0);
+    if (hasStock) return product.sizeStock;
   }
   if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
     return product.sizes.map((s: string) => ({ name: s, stock: product.stock ?? 0, visible: true }));
   }
-  return [];
+  return [{ name: 'One Size', stock: product.stock ?? 0, visible: true }];
 }
 
 export function getSizeStockByName(product: any, sizeName: string): number {
-  const list = getSizeStock(product);
-  const found = list.find((s) => s.name === sizeName);
-  if (found !== undefined) return found.stock;
+  if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
+    const found = product.sizeStock.find((s: any) => s.name === sizeName);
+    if (found) return found.stock ?? 0;
+  }
   return product.stock ?? 0;
 }
 
 export function getTotalStock(product: any): number {
   if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
-    return product.sizeStock.reduce((sum: number, s: any) => sum + s.stock, 0);
+    const fromSizes = product.sizeStock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
+    if (fromSizes > 0) return fromSizes;
   }
   return product.stock ?? 0;
 }
 
 export function getVisibleSizes(product: any): { name: string; stock: number }[] {
   if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
-    return product.sizeStock.filter((s: any) => s.visible).map(({ name, stock }: any) => ({ name, stock }));
+    const hasStock = product.sizeStock.some((s: any) => (s.stock || 0) > 0);
+    if (hasStock) {
+      return product.sizeStock.filter((s: any) => s.visible).map(({ name, stock }: any) => ({ name, stock }));
+    }
   }
   if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
     return product.sizes.map((s: string) => ({ name: s, stock: product.stock ?? 0 }));
