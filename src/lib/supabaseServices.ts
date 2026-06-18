@@ -153,7 +153,16 @@ export async function deleteBlogPost(id: string) {
 
 // ─── REVIEWS ─────────────────────────────────────────────
 export async function getProductReviews(productId: string) {
-  const { data, error } = await supabase.from('reviews').select('*').eq('product_id', productId).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('reviews')
+    .select('*').eq('product_id', productId).eq('approved', true)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
+}
+
+export async function getAllReviews() {
+  const { data, error } = await supabase.from('reviews')
+    .select('*').order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
@@ -161,6 +170,57 @@ export async function getProductReviews(productId: string) {
 export async function addReview(data: any) {
   const { error } = await supabase.from('reviews').insert(toSnake(data));
   if (error) throw error;
+}
+
+export async function updateReview(id: string, data: any) {
+  const { error } = await supabase.from('reviews').update(toSnake(data)).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteReview(id: string) {
+  const { error } = await supabase.from('reviews').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ─── HOMEPAGE SECTIONS ────────────────────────────
+export async function getHomepageSections() {
+  const { data, error } = await supabase.from('homepage_sections')
+    .select('*').eq('active', true).order('display_order', { ascending: true });
+  if (error) throw error;
+  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
+}
+
+export async function getAllHomepageSections() {
+  const { data, error } = await supabase.from('homepage_sections')
+    .select('*').order('display_order', { ascending: true });
+  if (error) throw error;
+  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
+}
+
+export async function addHomepageSection(data: any) {
+  const { data: result, error } = await supabase.from('homepage_sections')
+    .insert(toSnake(data)).select().single();
+  if (error) throw error;
+  return toCamel({ id: result.id, ...result });
+}
+
+export async function updateHomepageSection(id: string, data: any) {
+  const { error } = await supabase.from('homepage_sections')
+    .update({ ...toSnake(data), updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteHomepageSection(id: string) {
+  const { error } = await supabase.from('homepage_sections').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function getFeaturedReviews() {
+  const { data, error } = await supabase.from('reviews')
+    .select('*, products(name)').eq('featured', true).eq('approved', true)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((d) => toCamel({ id: d.id, ...d }));
 }
 
 // ─── STORAGE UPLOAD ─────────────────────────────────────

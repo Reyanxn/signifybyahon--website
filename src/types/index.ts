@@ -151,7 +151,19 @@ export interface Review {
   userName: string;
   rating: number;
   comment: string;
+  approved: boolean;
+  featured: boolean;
   createdAt: number;
+}
+
+export interface HomepageSection {
+  id: string;
+  title: string;
+  type: string;
+  displayOrder: number;
+  productIds: string[];
+  alignment: 'left' | 'center';
+  active: boolean;
 }
 
 export interface Analytics {

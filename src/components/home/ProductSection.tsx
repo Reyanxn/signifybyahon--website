@@ -7,15 +7,17 @@ import ProductCard from '@/components/product/ProductCard';
 import { getProducts } from '@/lib/supabaseServices';
 import type { Product } from '@/types';
 
-type SectionFilter = 'new-arrivals' | 'best-sellers' | 'trending' | 'summer' | 'sale';
+export type SectionFilter = 'new-arrivals' | 'best-sellers' | 'trending' | 'summer' | 'sale' | 'custom';
 
 interface ProductSectionProps {
   title: string;
   link?: string;
   filterType?: SectionFilter;
+  productIds?: string[];
+  alignment?: 'left' | 'center';
 }
 
-const filterMap: Record<SectionFilter, Record<string, any>> = {
+const filterMap: Record<string, Record<string, any>> = {
   'new-arrivals': { limitCount: 8 },
   'best-sellers': { bestSeller: true, limitCount: 8 },
   'trending': { trending: true, limitCount: 8 },
@@ -23,21 +25,30 @@ const filterMap: Record<SectionFilter, Record<string, any>> = {
   'sale': { onSale: true, limitCount: 8 },
 };
 
-export default function ProductSection({ title, link, filterType }: ProductSectionProps) {
+export default function ProductSection({ title, link, filterType, productIds, alignment }: ProductSectionProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const opts = filterType ? filterMap[filterType] : { limitCount: 8 };
-    getProducts(opts).then((data) => { setProducts(data); setLoading(false); });
-  }, [filterType]);
+    if (filterType === 'custom' && productIds && productIds.length > 0) {
+      Promise.all(productIds.map((id) =>
+        fetch(`/api/products?id=${id}`).then((r) => r.json()).catch(() => null)
+      )).then((results) => {
+        setProducts(results.filter(Boolean));
+        setLoading(false);
+      });
+    } else {
+      const opts = filterMap[filterType || ''] || { limitCount: 8 };
+      getProducts(opts).then((data) => { setProducts(data); setLoading(false); });
+    }
+  }, [filterType, productIds?.join(',')]);
 
   if (!loading && products.length === 0) return null;
 
   return (
     <section className="section-spacing">
       <div className="container-site">
-        <div className="flex items-end justify-between mb-8">
+        <div className={`flex items-end justify-between mb-8 ${alignment === 'center' ? 'flex-col items-center text-center' : ''}`}>
           <h2 className="text-lg md:text-xl tracking-[0.2em] font-normal">{title}</h2>
           {link && (
             <Link
@@ -55,7 +66,7 @@ export default function ProductSection({ title, link, filterType }: ProductSecti
             ))}
           </div>
         ) : (
-          <div className="product-grid">
+          <div className={`product-grid ${alignment === 'center' ? 'justify-center' : ''}`}>
             {products.map((product, i) => (
               <motion.div
                 key={product.id}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection,
+  HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection, HiStar, HiHome,
 } from 'react-icons/hi';
 import { getOrders, getProducts, getUsers } from '@/lib/supabaseServices';
 import { formatPrice } from '@/utils/helpers';
@@ -18,6 +18,8 @@ import AdminCategories from '@/components/admin/AdminCategories';
 import AdminReels from '@/components/admin/AdminReels';
 import AdminPopups from '@/components/admin/AdminPopups';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import AdminHomepage from '@/components/admin/AdminHomepage';
+import AdminReviews from '@/components/admin/AdminReviews';
 
 const adminTabs = [
   { id: 'dashboard', label: 'Dashboard', icon: HiChartBar },
@@ -26,6 +28,8 @@ const adminTabs = [
   { id: 'categories', label: 'Categories', icon: HiCollection },
   { id: 'orders', label: 'Orders', icon: HiShoppingBag },
   { id: 'customers', label: 'Customers', icon: HiUsers },
+  { id: 'homepage', label: 'Homepage', icon: HiHome },
+  { id: 'reviews', label: 'Reviews', icon: HiStar },
   { id: 'coupons', label: 'Coupons', icon: HiTag },
   { id: 'banners', label: 'Banners', icon: HiPhotograph },
   { id: 'popups', label: 'Popups', icon: HiPhotograph },
@@ -81,6 +85,8 @@ export default function AdminPage() {
             {activeTab === 'orders' && <AdminOrders />}
             {activeTab === 'customers' && <AdminCustomers />}
             {activeTab === 'categories' && <AdminCategories />}
+            {activeTab === 'homepage' && <AdminHomepage />}
+            {activeTab === 'reviews' && <AdminReviews />}
             {activeTab === 'coupons' && <AdminCoupons />}
             {activeTab === 'banners' && <AdminBanners />}
             {activeTab === 'popups' && <AdminPopups />}

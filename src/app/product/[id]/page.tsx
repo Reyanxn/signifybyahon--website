@@ -10,9 +10,9 @@ import StarRating from '@/components/ui/StarRating';
 import ProductCard from '@/components/product/ProductCard';
 import { formatPrice, getVisibleSizes, getSizeStockByName, getTotalStock } from '@/utils/helpers';
 import { useCartStore } from '@/store/cartStore';
-import { getProduct } from '@/lib/supabaseServices';
+import { getProduct, getProductReviews, addReview } from '@/lib/supabaseServices';
 import { trackEvent } from '@/components/layout/MetaPixel';
-import type { Product } from '@/types';
+import type { Product, Review } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function ProductPage() {
@@ -25,6 +25,9 @@ export default function ProductPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewForm, setReviewForm] = useState({ userName: '', rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
@@ -35,6 +38,7 @@ export default function ProductPage() {
         if (data) trackEvent('ViewContent', { content_ids: [data.id], content_type: 'product', value: data.salePrice || data.price, currency: 'BDT' });
         setLoading(false);
       });
+      getProductReviews(params.id as string).then(setReviews).catch(() => {});
     }
   }, [params.id]);
 
@@ -89,8 +93,8 @@ export default function ProductPage() {
           <div>
             <h1 className="text-lg md:text-xl tracking-[0.2em] font-normal">{product.name}</h1>
             <div className="flex items-center gap-3 mt-3">
-              <StarRating rating={4.5} size="sm" />
-              <span className="text-[10px] uppercase tracking-[0.1em] opacity-40">(0 reviews)</span>
+                <StarRating rating={reviews.length > 0 ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) : 0} size="sm" />
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-40">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
             </div>
 
             <div className="mt-6 flex items-baseline gap-3">
@@ -179,7 +183,56 @@ export default function ProductPage() {
               <button className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] opacity-50 hover:opacity-100 transition-opacity"><HiShare className="w-4 h-4" /> Share</button>
             </div>
 
-            <div className="mt-8 border-t pt-6 space-y-3">
+            <div className="mt-8 border-t pt-6">
+              <h3 className="text-xs uppercase tracking-[0.2em] mb-4">Reviews ({reviews.length})</h3>
+
+              <div className="space-y-4 mb-6">
+                {reviews.slice(0, 5).map((r) => (
+                  <div key={r.id} className="border-b border-[#DDDDDD] pb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium uppercase tracking-[0.1em]">{r.userName}</span>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <span key={s} className={`text-[9px] ${s <= r.rating ? 'text-yellow-500' : 'text-gray-300'}`}>&#9733;</span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[11px] opacity-70">{r.comment}</p>
+                  </div>
+                ))}
+                {reviews.length === 0 && <p className="text-[10px] opacity-40">No reviews yet. Be the first to review!</p>}
+              </div>
+
+              <div className="border border-[#DDDDDD] p-4">
+                <h4 className="text-[10px] uppercase tracking-[0.1em] mb-3">Write a Review</h4>
+                <div className="space-y-3">
+                  <input placeholder="Your Name *" value={reviewForm.userName} onChange={(e) => setReviewForm({ ...reviewForm, userName: e.target.value })} className="input-field text-xs w-full" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-[0.1em] opacity-60">Rating:</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button key={s} type="button" onClick={() => setReviewForm({ ...reviewForm, rating: s })} className={`text-sm ${s <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'}`}>&#9733;</button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea placeholder="Write your review..." value={reviewForm.comment} onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })} rows={3} className="input-field text-xs w-full resize-none" />
+                  <button type="button" disabled={submittingReview || !reviewForm.userName || !reviewForm.comment}
+                    onClick={async () => {
+                      setSubmittingReview(true);
+                      try {
+                        await addReview({ productId: product.id, userId: 'guest', userName: reviewForm.userName, rating: reviewForm.rating, comment: reviewForm.comment, approved: false, featured: false });
+                        toast.success('Review submitted! Awaiting approval.');
+                        setReviewForm({ userName: '', rating: 5, comment: '' });
+                        getProductReviews(product.id).then(setReviews);
+                      } catch { toast.error('Failed to submit'); }
+                      setSubmittingReview(false);
+                    }}
+                    className="btn btn-primary text-[10px]">{submittingReview ? 'Submitting...' : 'Submit Review'}</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 space-y-3">
               <div className="flex items-start gap-3 text-xs opacity-60"><HiTruck className="w-4 h-4 mt-0.5" /> Free shipping on orders over ৳2,000</div>
               <div className="flex items-start gap-3 text-xs opacity-60"><HiRefresh className="w-4 h-4 mt-0.5" /> 7 days easy returns</div>
               <div className="flex items-start gap-3 text-xs opacity-60"><HiShieldCheck className="w-4 h-4 mt-0.5" /> Secure checkout</div>
