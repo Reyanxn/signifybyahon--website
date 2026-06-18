@@ -190,7 +190,7 @@ function AdminCustomers() {
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} className="border-b last:border-0">
-                  <td className="py-3 uppercase tracking-[0.1em]">{u.name}</td>
+                  <td className="py-3 uppercase tracking-[0.1em]">{u.displayName || u.email || '—'}</td>
                   <td className="py-3 opacity-60">{u.email}</td>
                   <td className="py-3">{u.orderCount || 0}</td>
                   <td className="py-3"><span className="text-[10px] uppercase">{u.role || 'customer'}</span></td>

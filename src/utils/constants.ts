@@ -48,7 +48,7 @@ export const SORT_OPTIONS = [
   { value: 'popular', label: 'Popular' },
   { value: 'best-selling', label: 'Best Selling' },
   { value: 'price-low', label: 'Price: Low to High' },
-  { value: 'price-high', label: 'Price: High to High' },
+  { value: 'price-high', label: 'Price: High to Low' },
 ] as const;
 
 export const NAV_LINKS = [

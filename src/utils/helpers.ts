@@ -1,5 +1,5 @@
 export function formatPrice(price: number): string {
-  return `৳${price.toLocaleString('bn-BD')}`;
+  return `৳${price.toLocaleString('en-IN')}`;
 }
 
 export function generateSlug(name: string): string {
@@ -81,8 +81,7 @@ export function getSizeStockByName(product: any, sizeName: string): number {
 
 export function getTotalStock(product: any): number {
   if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
-    const fromSizes = product.sizeStock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
-    if (fromSizes > 0) return fromSizes;
+    return product.sizeStock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
   }
   return product.stock ?? 0;
 }
@@ -168,7 +167,7 @@ export function generateInvoiceHTML(order: any): string {
         ${itemsHtml}
       </table>
       <div class="totals">
-        <p>Subtotal: ৳${(totalAmount - shippingCharge).toLocaleString()}</p>
+        <p>Subtotal: ৳${(totalAmount - shippingCharge + discount).toLocaleString()}</p>
         <p>Shipping: ${shippingCharge === 0 ? 'Free' : '৳' + shippingCharge.toLocaleString()}</p>
         ${discount > 0 ? `<p>Discount: -৳${discount.toLocaleString()}</p>` : ''}
         <p class="grand">Total: ৳${totalAmount.toLocaleString()}</p>

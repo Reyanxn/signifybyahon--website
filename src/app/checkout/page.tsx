@@ -15,7 +15,7 @@ const cities = ['Dhaka', 'Chittagong', 'Sylhet', 'Khulna', 'Rajshahi', 'Barisal'
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getSubtotal, clearCart } = useCartStore();
+  const { items, getSubtotal, clearCart, discount } = useCartStore();
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', altPhone: '', email: '', address: '', city: '', area: '', notes: '' });
@@ -24,7 +24,7 @@ export default function CheckoutPage() {
   const subtotal = getSubtotal();
   const zoneRate = SHIPPING_RATES.find((r) => r.id === shippingZone);
   const shipping = subtotal >= SHIPPING.freeDeliveryThreshold ? 0 : (zoneRate?.price || 70);
-  const total = subtotal + shipping;
+  const total = subtotal + shipping - discount;
 
   if (items.length === 0) { router.push('/cart'); return null; }
 
@@ -48,7 +48,7 @@ export default function CheckoutPage() {
         id: orderId,
         items: items.map((i) => ({ ...i, image: i.image || '' })),
         totalAmount: total,
-        discount: 0,
+        discount,
         shippingCharge: shipping,
         paymentMethod: paymentMethod as any,
         paymentStatus: 'pending',
@@ -56,8 +56,6 @@ export default function CheckoutPage() {
         customerInfo: { name: form.name, phone: form.phone, altPhone: form.altPhone, email: form.email },
         shippingAddress: { address: form.address, city: form.city, area: form.area },
         notes: `Zone: ${zoneRate?.label || 'Inside Dhaka'}${form.notes ? ' | ' + form.notes : ''}`,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
       });
       trackEvent('Purchase', { value: total, currency: 'BDT', content_ids: items.map((i) => i.productId), content_type: 'product' });
       await Promise.all(items.map((item) => decrementProductStock(item.productId, item.size, item.quantity)));
@@ -140,6 +138,7 @@ export default function CheckoutPage() {
                 <div className="border-t pt-4 space-y-2 text-xs">
                   <div className="flex justify-between"><span className="opacity-60">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
                   <div className="flex justify-between"><span className="opacity-60">Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
+                  {discount > 0 && <div className="flex justify-between"><span className="opacity-60">Discount</span><span>-{formatPrice(discount)}</span></div>}
                   <div className="flex justify-between font-medium border-t pt-2"><span>Total</span><span>{formatPrice(total)}</span></div>
                 </div>
                 <Button type="submit" size="lg" className="w-full text-[10px]" loading={loading}>Place Order</Button>

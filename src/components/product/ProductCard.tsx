@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { HiHeart, HiShoppingBag } from 'react-icons/hi';
-import { formatPrice, getTotalStock } from '@/utils/helpers';
+import { formatPrice, getTotalStock, getVisibleSizes } from '@/utils/helpers';
+import { useCartStore } from '@/store/cartStore';
+import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   product: {
@@ -16,13 +18,30 @@ interface ProductCardProps {
     images?: string[];
     category?: string;
     sizeStock?: { name: string; stock: number; visible: boolean }[];
+    sizes?: string[];
   };
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
   const hasSecondImage = (product.images?.length || 0) >= 2;
   const isOutOfStock = getTotalStock(product) === 0;
+
+  const handleAddToCart = () => {
+    const sizes = getVisibleSizes(product);
+    const size = sizes.length > 0 ? sizes[0].name : 'One Size';
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.salePrice || product.price,
+      size,
+      color: '',
+      quantity: 1,
+      image: product.images?.[0] || product.image || '',
+    });
+    toast.success('Added to cart');
+  };
 
   return (
     <div className="group" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
@@ -63,7 +82,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </button>
           </div>
           <div className="absolute bottom-0 left-0 right-0 bg-white py-3 px-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-            <button disabled={isOutOfStock} className={`w-full flex items-center justify-center gap-2 py-2.5 text-[10px] uppercase tracking-[0.2em] transition-opacity ${
+            <button disabled={isOutOfStock} onClick={handleAddToCart} className={`w-full flex items-center justify-center gap-2 py-2.5 text-[10px] uppercase tracking-[0.2em] transition-opacity ${
               isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1C1C1C] text-white hover:opacity-90'
             }`}>
               <HiShoppingBag className="w-3.5 h-3.5" />

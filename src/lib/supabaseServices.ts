@@ -24,8 +24,10 @@ function toCamel(obj: any): any {
 
 function getTotalStockRaw(product: any): number {
   if (product.size_stock && Array.isArray(product.size_stock) && product.size_stock.length > 0) {
-    const s = product.size_stock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
-    if (s > 0) return s;
+    return product.size_stock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
+  }
+  if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
+    return product.sizeStock.reduce((sum: number, s: any) => sum + (s.stock || 0), 0);
   }
   return product.stock ?? 0;
 }
