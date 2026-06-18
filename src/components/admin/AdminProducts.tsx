@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getProducts, addProduct, updateProduct, deleteProduct, uploadProductImage } from '@/lib/supabaseServices';
 import { supabase } from '@/lib/supabase';
-import { formatPrice } from '@/utils/helpers';
+import { formatPrice, getSizeStock } from '@/utils/helpers';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -16,12 +16,13 @@ export default function AdminProducts() {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     name: '', description: '', price: '', salePrice: '',
-    categoryId: '', collectionId: '', sizes: '', colors: '', stock: '',
+    categoryId: '', collectionId: '', colors: '', stock: '',
     featured: false, bestSeller: false, trending: false, tags: '', video: '',
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [sizeChart, setSizeChart] = useState<{ columns: string[]; rows: { label: string; values: string[] }[] } | null>(null);
+  const [sizeStockList, setSizeStockList] = useState<{ name: string; stock: number; visible: boolean }[]>([]);
 
   useEffect(() => {
     loadProducts();
@@ -39,10 +40,11 @@ export default function AdminProducts() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', description: '', price: '', salePrice: '', categoryId: '', collectionId: '', sizes: '', colors: '', stock: '', featured: false, bestSeller: false, trending: false, tags: '', video: '' });
+    setForm({ name: '', description: '', price: '', salePrice: '', categoryId: '', collectionId: '', colors: '', stock: '', featured: false, bestSeller: false, trending: false, tags: '', video: '' });
     setImageFiles([]);
     setExistingImages([]);
     setSizeChart(null);
+    setSizeStockList([]);
     setShowForm(true);
   };
 
@@ -52,13 +54,14 @@ export default function AdminProducts() {
       name: p.name, description: p.description,
       price: String(p.price), salePrice: p.salePrice ? String(p.salePrice) : '',
       categoryId: p.categoryId, collectionId: p.collectionId || '',
-      sizes: p.sizes.join(', '), colors: p.colors.join(', '), stock: String(p.stock),
+      colors: p.colors.join(', '), stock: String(p.stock),
       featured: p.featured || false, bestSeller: p.bestSeller || false, trending: p.trending || false,
       tags: (p.tags || []).join(', '), video: (p as any).video || '',
     });
     setExistingImages(p.images || []);
     setImageFiles([]);
     setSizeChart((p as any).sizeChart || null);
+    setSizeStockList(getSizeStock(p));
     setShowForm(true);
   };
 
@@ -72,6 +75,9 @@ export default function AdminProducts() {
         images.push(url);
       }
 
+      const totalStock = sizeStockList.reduce((sum, s) => sum + s.stock, 0);
+      const sizeNames = sizeStockList.filter((s) => s.visible).map((s) => s.name);
+
       const productData = {
         name: form.name,
         slug: form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
@@ -82,15 +88,16 @@ export default function AdminProducts() {
         categoryId: form.categoryId,
         collectionId: form.collectionId,
         images,
-        sizes: form.sizes.split(',').map((s) => s.trim()).filter(Boolean),
+        sizes: sizeNames,
         colors: form.colors.split(',').map((c) => c.trim()).filter(Boolean),
-        stock: Number(form.stock),
+        stock: totalStock,
         featured: form.featured,
         bestSeller: form.bestSeller,
         trending: form.trending,
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         video: form.video || null,
         size_chart: sizeChart || null,
+        size_stock: sizeStockList,
       };
 
       if (editing) {
@@ -104,6 +111,7 @@ export default function AdminProducts() {
           category_id: productData.categoryId, collection_id: productData.collectionId,
           images: productData.images, sizes: productData.sizes, colors: productData.colors,
           stock: productData.stock, video: form.video || null, size_chart: sizeChart || null,
+          size_stock: sizeStockList,
           featured: productData.featured, best_seller: productData.bestSeller,
           trending: productData.trending, tags: productData.tags,
         });
@@ -127,6 +135,20 @@ export default function AdminProducts() {
   const toggle = (key: 'featured' | 'bestSeller' | 'trending') =>
     setForm((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  const updateSize = (index: number, field: 'name' | 'stock' | 'visible', value: any) => {
+    const list = [...sizeStockList];
+    (list[index] as any)[field] = value;
+    setSizeStockList(list);
+  };
+
+  const addSize = () => {
+    setSizeStockList([...sizeStockList, { name: '', stock: 0, visible: true }]);
+  };
+
+  const removeSize = (index: number) => {
+    setSizeStockList(sizeStockList.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="bg-white border border-[#DDDDDD] p-6">
       <div className="flex items-center justify-between mb-6">
@@ -145,9 +167,7 @@ export default function AdminProducts() {
             <input placeholder="Collection ID (e.g. summer)" value={form.collectionId} onChange={(e) => setForm({ ...form, collectionId: e.target.value })} className="input-field text-xs" />
             <input placeholder="Price *" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required className="input-field text-xs" />
             <input placeholder="Sale Price" type="number" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className="input-field text-xs" />
-            <input placeholder="Sizes (S, M, L, XL)" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} className="input-field text-xs" />
             <input placeholder="Colors (Black, Red, etc.)" value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} className="input-field text-xs" />
-            <input placeholder="Stock *" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required className="input-field text-xs" />
             <input placeholder="Video URL (optional)" value={form.video} onChange={(e) => setForm({ ...form, video: e.target.value })} className="input-field text-xs" />
             <input placeholder="Tags (new, exclusive, etc.)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="input-field text-xs" />
             <div className="flex items-end gap-4 pb-1">
@@ -171,6 +191,46 @@ export default function AdminProducts() {
               {existingImages.length > 0 && <p className="text-[10px] mt-1 opacity-60">{existingImages.length} existing image(s)</p>}
             </div>
           </div>
+
+          <div className="border border-[#DDDDDD] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Size & Stock</span>
+            </div>
+            {sizeStockList.length > 0 && (
+              <div className="overflow-x-auto mb-2">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="pb-1 pr-2 text-[10px] uppercase tracking-[0.1em] opacity-60">Size Name</th>
+                      <th className="pb-1 pr-2 text-[10px] uppercase tracking-[0.1em] opacity-60">Stock</th>
+                      <th className="pb-1 pr-2 text-[10px] uppercase tracking-[0.1em] opacity-60">Visible</th>
+                      <th className="pb-1 w-6" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizeStockList.map((s, i) => (
+                      <tr key={i}>
+                        <td className="py-1 pr-2">
+                          <input value={s.name} onChange={(e) => updateSize(i, 'name', e.target.value)} placeholder="e.g. S, M, Free Size" className="w-24 bg-transparent border-b border-dotted border-[#DDDDDD] outline-none text-[10px] uppercase tracking-[0.1em]" />
+                        </td>
+                        <td className="py-1 pr-2">
+                          <input value={s.stock} type="number" min={0} onChange={(e) => updateSize(i, 'stock', Math.max(0, Number(e.target.value)))} className="w-16 bg-transparent border-b border-dotted border-[#DDDDDD] outline-none text-[10px]" />
+                        </td>
+                        <td className="py-1 pr-2">
+                          <input type="checkbox" checked={s.visible} onChange={(e) => updateSize(i, 'visible', e.target.checked)} className="w-3.5 h-3.5 accent-black" />
+                        </td>
+                        <td className="py-1">
+                          <button type="button" onClick={() => removeSize(i)} className="text-red-500 text-[9px]">x</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <button type="button" onClick={addSize} className="text-[10px] underline opacity-60 hover:opacity-100">+ Add Size</button>
+          </div>
+
           <div className="border border-[#DDDDDD] p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] uppercase tracking-[0.2em] opacity-60">Size Chart</span>

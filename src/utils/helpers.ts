@@ -60,6 +60,33 @@ export function getOrderStatusColor(status: string): string {
   return colors[status] || 'bg-gray-100 text-gray-800';
 }
 
+export function getSizeStock(product: any): { name: string; stock: number; visible: boolean }[] {
+  if (product.sizeStock && Array.isArray(product.sizeStock) && product.sizeStock.length > 0) {
+    return product.sizeStock;
+  }
+  if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
+    const perSize = product.stock ? Math.floor(product.stock / product.sizes.length) : 0;
+    return product.sizes.map((s: string) => ({ name: s, stock: perSize, visible: true }));
+  }
+  return [];
+}
+
+export function getSizeStockByName(product: any, sizeName: string): number {
+  const list = getSizeStock(product);
+  const found = list.find((s) => s.name === sizeName);
+  return found?.stock ?? 0;
+}
+
+export function getTotalStock(product: any): number {
+  const list = getSizeStock(product);
+  return list.reduce((sum, s) => sum + s.stock, 0);
+}
+
+export function getVisibleSizes(product: any): { name: string; stock: number }[] {
+  const list = getSizeStock(product);
+  return list.filter((s) => s.visible).map(({ name, stock }) => ({ name, stock }));
+}
+
 function g<T>(obj: any, ...keys: string[]): T | undefined {
   for (const k of keys) {
     const v = obj[k];

@@ -1,3 +1,9 @@
+export interface SizeStock {
+  name: string;
+  stock: number;
+  visible: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -13,6 +19,7 @@ export interface Product {
   sizes: string[];
   colors: string[];
   stock: number;
+  sizeStock?: SizeStock[];
   featured: boolean;
   bestSeller: boolean;
   trending: boolean;

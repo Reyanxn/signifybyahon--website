@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { HiHeart, HiShoppingBag } from 'react-icons/hi';
-import { formatPrice } from '@/utils/helpers';
+import { formatPrice, getTotalStock } from '@/utils/helpers';
 
 interface ProductCardProps {
   product: {
@@ -15,13 +15,14 @@ interface ProductCardProps {
     image?: string;
     images?: string[];
     category?: string;
+    sizeStock?: { name: string; stock: number; visible: boolean }[];
   };
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const hasSecondImage = (product.images?.length || 0) >= 2;
-  const isOutOfStock = product.stock === 0;
+  const isOutOfStock = getTotalStock(product) === 0;
 
   return (
     <div className="group" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>

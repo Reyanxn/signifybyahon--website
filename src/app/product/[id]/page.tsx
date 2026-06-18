@@ -8,7 +8,7 @@ import { HiHeart, HiShare, HiMinus, HiPlus, HiTruck, HiRefresh, HiShieldCheck } 
 import Button from '@/components/ui/Button';
 import StarRating from '@/components/ui/StarRating';
 import ProductCard from '@/components/product/ProductCard';
-import { formatPrice } from '@/utils/helpers';
+import { formatPrice, getVisibleSizes, getSizeStockByName, getTotalStock } from '@/utils/helpers';
 import { useCartStore } from '@/store/cartStore';
 import { getProduct } from '@/lib/supabaseServices';
 import { trackEvent } from '@/components/layout/MetaPixel';
@@ -43,6 +43,8 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; }
+    const sizeStock = getSizeStockByName(product, selectedSize);
+    if (sizeStock === 0) { toast.error('This size is out of stock'); return; }
     addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor });
     trackEvent('AddToCart', { content_ids: [product.id], content_type: 'product', value: product.salePrice || product.price, currency: 'BDT' });
     toast.success('Added to cart!');
@@ -118,10 +120,17 @@ export default function ProductPage() {
                 <button onClick={() => setShowSizeGuide(!showSizeGuide)} className="text-[10px] uppercase tracking-[0.1em] underline opacity-60 hover:opacity-100">Size Guide</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {product.sizes?.map((size) => (
-                  <button key={size} onClick={() => setSelectedSize(size)}
-                    className={`w-10 h-10 text-[10px] uppercase border transition-colors ${selectedSize === size ? 'bg-[#1C1C1C] text-white border-[#1C1C1C]' : 'border-[#DDDDDD] hover:border-[#1C1C1C]'}`}>{size}</button>
-                ))}
+                {getVisibleSizes(product).map(({ name: size, stock: sizeStock }) => {
+                  const isOut = sizeStock === 0;
+                  return (
+                    <button key={size} onClick={() => !isOut && setSelectedSize(size)}
+                      disabled={isOut}
+                      className={`relative w-12 h-12 text-[10px] uppercase border transition-colors ${selectedSize === size && !isOut ? 'bg-[#1C1C1C] text-white border-[#1C1C1C]' : isOut ? 'border-[#EEEEEE] text-gray-300 cursor-not-allowed' : 'border-[#DDDDDD] hover:border-[#1C1C1C]'}`}>
+                      {size}
+                      {isOut && <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[7px] text-gray-300 uppercase tracking-[0.1em] whitespace-nowrap">Out</span>}
+                    </button>
+                  );
+                })}
               </div>
               {showSizeGuide && (() => {
                 const sc = (product as any).sizeChart;
@@ -154,15 +163,15 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {product.stock === 0 && (
+            {getTotalStock(product) === 0 && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 text-xs text-red-700 uppercase tracking-[0.1em] text-center">Stock Out — This product is currently unavailable</div>
             )}
-            {product.stock > 0 && product.stock <= 5 && (
-              <div className="mt-4 text-[10px] uppercase tracking-[0.1em] opacity-60">Only {product.stock} left in stock</div>
+            {getTotalStock(product) > 0 && getTotalStock(product) <= 5 && (
+              <div className="mt-4 text-[10px] uppercase tracking-[0.1em] opacity-60">Only {getTotalStock(product)} left in stock</div>
             )}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={product.stock === 0}>Add to Cart</Button>
-              <Button size="lg" variant="outline" className="flex-1" onClick={() => { if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; } addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor }); trackEvent('AddToCart', { content_ids: [product.id], content_type: 'product', value: product.salePrice || product.price, currency: 'BDT' }); router.push('/checkout'); }} disabled={product.stock === 0}>Buy Now</Button>
+              <Button size="lg" className="flex-1" onClick={handleAddToCart} disabled={getTotalStock(product) === 0}>Add to Cart</Button>
+              <Button size="lg" variant="outline" className="flex-1" onClick={() => { if (!selectedSize || !selectedColor) { toast.error('Please select size and color'); return; } if (getSizeStockByName(product, selectedSize) === 0) { toast.error('This size is out of stock'); return; } addItem({ productId: product.id, name: product.name, image: product.images?.[0] || '', price: product.salePrice || product.price, quantity, size: selectedSize, color: selectedColor }); trackEvent('AddToCart', { content_ids: [product.id], content_type: 'product', value: product.salePrice || product.price, currency: 'BDT' }); router.push('/checkout'); }} disabled={getTotalStock(product) === 0}>Buy Now</Button>
             </div>
 
             <div className="mt-4 flex items-center gap-6">
