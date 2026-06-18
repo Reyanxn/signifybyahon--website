@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection, HiStar, HiHome, HiDatabase,
+  HiChartBar, HiShoppingBag, HiUsers, HiCurrencyDollar, HiCube, HiTag, HiPhotograph, HiDocumentText, HiCollection, HiStar, HiHome,
 } from 'react-icons/hi';
 import { getOrders, getProducts, getUsers } from '@/lib/supabaseServices';
 import { formatPrice } from '@/utils/helpers';
@@ -20,7 +20,6 @@ import AdminPopups from '@/components/admin/AdminPopups';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import AdminHomepage from '@/components/admin/AdminHomepage';
 import AdminReviews from '@/components/admin/AdminReviews';
-import AdminSetup from '@/components/admin/AdminSetup';
 
 const adminTabs = [
   { id: 'dashboard', label: 'Dashboard', icon: HiChartBar },
@@ -36,7 +35,6 @@ const adminTabs = [
   { id: 'popups', label: 'Popups', icon: HiPhotograph },
   { id: 'reels', label: 'Reels', icon: HiDocumentText },
   { id: 'blogs', label: 'Blogs', icon: HiDocumentText },
-  { id: 'setup', label: 'Setup', icon: HiDatabase },
 ];
 
 export default function AdminPage() {
@@ -94,7 +92,6 @@ export default function AdminPage() {
             {activeTab === 'popups' && <AdminPopups />}
             {activeTab === 'reels' && <AdminReels />}
             {activeTab === 'blogs' && <AdminBlogs />}
-            {activeTab === 'setup' && <AdminSetup />}
           </div>
         </div>
       </div>
@@ -108,7 +105,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     Promise.all([getOrders(), getProducts(), getUsers()]).then(([orders, products, users]) => {
-      const revenue = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+      const revenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
       setStats({ revenue, orders: orders.length, customers: users.length, products: products.length });
       setRecentOrders(orders.slice(-5).reverse());
     });

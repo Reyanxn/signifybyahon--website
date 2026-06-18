@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { uploadFile } from '@/lib/supabaseServices';
 import ImageCropper from '@/components/ui/ImageCropper';
 import toast from 'react-hot-toast';
@@ -21,11 +22,13 @@ export default function AdminPopups() {
 
   const loadPopups = async () => {
     setLoading(true);
-    try {
-      const res = await fetch('/api/popups');
-      const json = await res.json();
-      setPopups(json.data || []);
-    } catch { /* table may not exist yet */ }
+    const { data, error } = await supabase.from('popups').select('*').order('order', { ascending: true });
+    if (error) {
+      if (error.message?.includes('does not exist')) {
+        toast.error('Popup table not found. Run the SQL in Supabase editor first.');
+      }
+    }
+    if (!error && data) setPopups(data);
     setLoading(false);
   };
 
@@ -75,18 +78,16 @@ export default function AdminPopups() {
       if (cropFile) {
         imageUrl = await uploadFile(cropFile, `popups/${Date.now()}`);
       }
+      const data: any = { link: link || null, active };
+      if (imageUrl) data.image = imageUrl;
 
       if (editingId) {
-        const body: any = { id: editingId, link: link || null, active };
-        if (imageUrl) body.image = imageUrl;
-        const res = await fetch('/api/popups', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error);
+        const { error } = await supabase.from('popups').update(data).eq('id', editingId);
+        if (error) throw error;
         toast.success('Popup updated!');
       } else {
-        const res = await fetch('/api/popups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: imageUrl, link: link || null, active, order: popups.length }) });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error);
+        const { error } = await supabase.from('popups').insert({ ...data, image: imageUrl, order: popups.length });
+        if (error) throw error;
         toast.success('Popup created!');
       }
       setShowForm(false);
@@ -99,21 +100,9 @@ export default function AdminPopups() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this popup?')) return;
-    try {
-      const res = await fetch(`/api/popups?id=${id}`, { method: 'DELETE' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      toast.success('Popup deleted');
-      loadPopups();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  const reorder = async (arr: any[]) => {
-    for (let i = 0; i < arr.length; i++) {
-      await fetch('/api/popups', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: arr[i].id, order: i }) });
-    }
+    const { error } = await supabase.from('popups').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Popup deleted');
     loadPopups();
   };
 
@@ -121,14 +110,20 @@ export default function AdminPopups() {
     if (index === 0) return;
     const arr = [...popups];
     [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
-    reorder(arr);
+    for (let i = 0; i < arr.length; i++) {
+      await supabase.from('popups').update({ order: i }).eq('id', arr[i].id);
+    }
+    loadPopups();
   };
 
   const moveDown = async (index: number) => {
     if (index >= popups.length - 1) return;
     const arr = [...popups];
     [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
-    reorder(arr);
+    for (let i = 0; i < arr.length; i++) {
+      await supabase.from('popups').update({ order: i }).eq('id', arr[i].id);
+    }
+    loadPopups();
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 function getReferrerSource(): string {
   if (typeof document === 'undefined') return 'Direct';
@@ -21,17 +22,9 @@ function getReferrerSource(): string {
   try { return new URL(ref).hostname.replace('www.', ''); } catch { return 'Other'; }
 }
 
-function getDevice(): string {
-  if (typeof navigator === 'undefined') return 'unknown';
-  const ua = navigator.userAgent;
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return 'mobile';
-  if (/Tablet|iPad/i.test(ua)) return 'tablet';
-  return 'desktop';
-}
-
-function getScreen(): string {
-  if (typeof window === 'undefined') return '';
-  return `${window.innerWidth}x${window.innerHeight}`;
+function getPageTitle(): string {
+  if (typeof document === 'undefined') return '';
+  return document.title || '';
 }
 
 export default function VisitTracker() {
@@ -44,16 +37,11 @@ export default function VisitTracker() {
 
     const id = setTimeout(async () => {
       try {
-        await fetch('/api/track-visit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            page: pathname,
-            title: typeof document !== 'undefined' ? document.title : '',
-            referrer: getReferrerSource(),
-            device: getDevice(),
-            screen: getScreen(),
-          }),
+        await supabase.from('visits').insert({
+          page: pathname,
+          title: getPageTitle(),
+          referrer: getReferrerSource(),
+          created_at: new Date().toISOString(),
         });
       } catch {}
     }, 800);
